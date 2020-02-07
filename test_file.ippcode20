@@ -1,0 +1,12 @@
+.IPPcode20
+DEFVAR GF@counter
+MOVE GF@counter string@ # Inicializace promenn é na prá zdn ý retezec
+# Jednoduch á iterace , dokud nebude splnena zadan á podm í nka
+LABEL while
+JUMPIFEQ end GF@counter string@aaa
+WRITE string@counter \032 obsahuje \032
+WRITE GF@counter
+WRITE string@ \010
+CONCAT GF@counter GF@counter string@a
+JUMP while
+LABEL end
