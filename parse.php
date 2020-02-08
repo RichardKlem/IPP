@@ -1,12 +1,5 @@
 <?php
 
-
-class parse
-{
-}
-#$options = getopt("--help:");
-#var_dump($options);
-
 $zero_arg_opcodes = array("CREATEFRAME", "PUSHFRAME", "POPFRAME", "RETURN", "BREAK");
 $one_arg_opcodes = array("DEFVAR", "CALL", "PUSHS", "POPS", "WRITE", "LABEL", "JUMP", "EXIT", "DPRINT");
 $two_arg_opcodes = array("MOVE", "NOT", "INT2CHAR", "READ", "STRLEN", "TYPE");
@@ -26,6 +19,19 @@ $longopts  = array(
 );
 $options = getopt($shortopts, $longopts);
 
+function get_type_and_value($arg){
+    $type = "";
+    $value = "";
+    if(preg_match("/[GL]F@/", $arg)){
+        $type = "var";
+        $value = $arg;
+    }
+    elseif(preg_match("/(string|int|float)@(.*)/", $arg, $matches)){
+        $type = $matches[1];
+        $value = $matches[2];
+    }
+    return array($type, $value);
+}
 if(key_exists("help", $options)){
         echo "Toto je napoveda\n";
         exit(0);
@@ -48,8 +54,10 @@ if($xmlWriter)
 
     $i = 1;
     $input = fopen('php://stdin', 'r');
+
     if(!strcmp(strtolower($line = fgets($input)),'.ippcode20'))
         exit(21);
+
     $line = fgets($input);
     while($line)
     {
@@ -61,10 +69,13 @@ if($xmlWriter)
             $memXmlWriter->startElement('instruction');
             $memXmlWriter->writeAttribute('order', $i);
             $memXmlWriter->writeAttribute('opcode', $comp[0]);
+            $type = "";
+            $value = "";
             if(in_array($comp[0], $one_arg_opcodes)){
                 $memXmlWriter->startElement('arg1');
-                $memXmlWriter->writeAttribute('type', "TODO");
-                $memXmlWriter->text($comp[1]);
+                list($type, $value) = get_type_and_value($comp[1]);
+                $memXmlWriter->writeAttribute('type', $type);
+                $memXmlWriter->text($value);
                 $memXmlWriter->endElement();
             }
             elseif(in_array($comp[0], $two_arg_opcodes)){
@@ -91,10 +102,11 @@ if($xmlWriter)
                 $memXmlWriter->text($comp[3]);
                 $memXmlWriter->endElement();
             }
+            //if opcode is in zero_arg_opcodes nothing has to be done
             $i++;
 
             #var_dump($comp);
-            $memXmlWriter->endElement();
+            $memXmlWriter->endElement(); #</instruction>
 
             $batchXmlString = $memXmlWriter->outputMemory(true);
             $xmlWriter->writeRaw($batchXmlString);
@@ -103,6 +115,6 @@ if($xmlWriter)
     }
     $memXmlWriter->flush();
     unset($memXmlWriter);
-    $xmlWriter->endElement();
+    $xmlWriter->endElement(); # </program>
     $xmlWriter->endDocument();
 }
