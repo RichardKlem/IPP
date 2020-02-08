@@ -1,7 +1,7 @@
 .IPPcode20
 DEFVAR GF@counter
-MOVE GF@counter string@ # Inicializace promenn é na prá zdn ý retezec
-# Jednoduch á iterace , dokud nebude splnena zadan á podm í nka
+MOVE GF@counter string@ # Inicializace prom	enné na prázdný retezec
+# Jednoduchá iterace, dokud nebude splnena zadaná podmínka
 LABEL while
 JUMPIFEQ end GF@counter string@aaa
 WRITE string@counter \032 obsahuje \032
