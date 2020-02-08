@@ -3,6 +3,9 @@ DEFVAR GF@counter
 MOVE GF@counter string@ # Inicializace prom	enné na prázdný retezec
 # Jednoduchá iterace, dokud nebude splnena zadaná podmínka
 LABEL while
+
+
+
 JUMPIFEQ end GF@counter string@aaa
 WRITE string@counter \032 obsahuje \032
 WRITE GF@counter
