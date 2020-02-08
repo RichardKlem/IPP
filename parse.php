@@ -69,6 +69,7 @@ if($xmlWriter)
             $memXmlWriter->startElement('instruction');
             $memXmlWriter->writeAttribute('order', $i);
             $memXmlWriter->writeAttribute('opcode', $comp[0]);
+            $args = array("arg1", "arg2", "arg3");
             $type = "";
             $value = "";
             if(in_array($comp[0], $one_arg_opcodes)){
@@ -79,28 +80,22 @@ if($xmlWriter)
                 $memXmlWriter->endElement();
             }
             elseif(in_array($comp[0], $two_arg_opcodes)){
-                $memXmlWriter->startElement('arg1');
-                $memXmlWriter->writeAttribute('type', "TODO");
-                $memXmlWriter->text($comp[1]);
-                $memXmlWriter->endElement();
-                $memXmlWriter->startElement('arg2');
-                $memXmlWriter->writeAttribute('type', "TODO");
-                $memXmlWriter->text($comp[2]);
-                $memXmlWriter->endElement();
+                for($j = 0; $j < 2; $j++){
+                    $memXmlWriter->startElement($args[$j]);
+                    list($type, $value) = get_type_and_value($comp[$j + 1]);
+                    $memXmlWriter->writeAttribute('type', $type);
+                    $memXmlWriter->text($value);
+                    $memXmlWriter->endElement();
+                }
             }
             elseif(in_array($comp[0], $three_arg_opcodes)){
-                $memXmlWriter->startElement('arg1');
-                $memXmlWriter->writeAttribute('type', "TODO");
-                $memXmlWriter->text($comp[1]);
-                $memXmlWriter->endElement();
-                $memXmlWriter->startElement('arg2');
-                $memXmlWriter->writeAttribute('type', "TODO");
-                $memXmlWriter->text($comp[2]);
-                $memXmlWriter->endElement();
-                $memXmlWriter->startElement('arg3');
-                $memXmlWriter->writeAttribute('type', "TODO");
-                $memXmlWriter->text($comp[3]);
-                $memXmlWriter->endElement();
+                for($j = 0; $j < 3; $j++){
+                    $memXmlWriter->startElement($args[$j]);
+                    list($type, $value) = get_type_and_value($comp[$j + 1]);
+                    $memXmlWriter->writeAttribute('type', $type);
+                    $memXmlWriter->text($value);
+                    $memXmlWriter->endElement();
+                }
             }
             //if opcode is in zero_arg_opcodes nothing has to be done
             $i++;
