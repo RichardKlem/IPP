@@ -10,25 +10,45 @@ $opcodes = array("CREATEFRAME", "PUSHFRAME", "POPFRAME", "RETURN", "BREAK", "DEF
     "LT", "GT", "EQ", "AND", "OR", "STRI2INT", "CONCAT", "GETCHAR", "SETCHAR", "JUMPIFEQ", "JUMPIFNEQ");
 
 $shortopts  = "";
-$shortopts .= "f:";  // Required value
-$shortopts .= "v::"; // Optional value
-$shortopts .= "h"; // These options do not accept values
-
-$longopts  = array(
-    "help",
-);
+$shortopts .= "h";
+$longopts  = array("help",);
 $options = getopt($shortopts, $longopts);
 
-function get_type_and_value($arg){
+function get_type_and_value($opcode, $arg){
     $type = "";
     $value = "";
-    if(preg_match("/[GL]F@/", $arg)){
-        $type = "var";
+    if (in_array($opcode, array("LABEL", "JUMP", "CALL"))) {
+        $type = "label";
         $value = $arg;
     }
-    elseif(preg_match("/(string|int|float)@(.*)/", $arg, $matches)){
-        $type = $matches[1];
-        $value = $matches[2];
+    elseif (!strcmp($opcode, "EXIT")){
+
+        if(((preg_match("/(int)@(.*)/", $arg, $matches)) != 1) || ($matches[2] < 0 || $matches[2] > 49))
+            exit(57);
+        else {
+            $type = $matches[1];
+            $value = $matches[2];
+        }
+    }
+    else {
+        if (preg_match("/[GL]F@/", $arg)) {
+            $type = "var";
+            $value = $arg;
+        }
+        elseif (preg_match("/(string|int|bool|type)@(.*)/", $arg, $matches)) {
+            $type = $matches[1];
+            $value = $matches[2];
+            if (!strcmp($type, 'bool'))
+                $value = strtolower($value);
+        }
+        elseif (!strcmp($arg, "nil")){
+            $type = "nil";
+            $value = "nil";
+        }
+        elseif (preg_match("/JUMPIFN?EQ/", $opcode)){
+            $type = "label";
+            $value = $arg;
+        }
     }
     return array($type, $value);
 }
@@ -40,7 +60,7 @@ if(key_exists("help", $options)){
 # _________XMLWrite__________
 $xmlWriter = new XMLWriter();
 $xmlWriter->openUri('php://output');
-$xmlWriter->setIndent(true);
+$xmlWriter->setIndent(false);
 if($xmlWriter)
 {
     $xmlWriter->startDocument('1.0','UTF-8');
@@ -62,7 +82,7 @@ if($xmlWriter)
     while($line)
     {
         $comp = preg_split('/\s+/', $line);
-
+        $comp[0] = strtoupper($comp[0]);
         if((strcmp($comp[0], "#")) && (strcmp($comp[0], ""))){
             if(!in_array($comp[0], $opcodes))
                 exit(22);
@@ -74,7 +94,7 @@ if($xmlWriter)
             $value = "";
             if(in_array($comp[0], $one_arg_opcodes)){
                 $memXmlWriter->startElement('arg1');
-                list($type, $value) = get_type_and_value($comp[1]);
+                list($type, $value) = get_type_and_value($comp[0], $comp[1]);
                 $memXmlWriter->writeAttribute('type', $type);
                 $memXmlWriter->text($value);
                 $memXmlWriter->endElement();
@@ -82,7 +102,7 @@ if($xmlWriter)
             elseif(in_array($comp[0], $two_arg_opcodes)){
                 for($j = 0; $j < 2; $j++){
                     $memXmlWriter->startElement($args[$j]);
-                    list($type, $value) = get_type_and_value($comp[$j + 1]);
+                    list($type, $value) = get_type_and_value($comp[0], $comp[$j + 1]);
                     $memXmlWriter->writeAttribute('type', $type);
                     $memXmlWriter->text($value);
                     $memXmlWriter->endElement();
@@ -91,7 +111,7 @@ if($xmlWriter)
             elseif(in_array($comp[0], $three_arg_opcodes)){
                 for($j = 0; $j < 3; $j++){
                     $memXmlWriter->startElement($args[$j]);
-                    list($type, $value) = get_type_and_value($comp[$j + 1]);
+                    list($type, $value) = get_type_and_value($comp[0], $comp[$j + 1]);
                     $memXmlWriter->writeAttribute('type', $type);
                     $memXmlWriter->text($value);
                     $memXmlWriter->endElement();

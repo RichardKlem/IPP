@@ -13,3 +13,33 @@ WRITE string@ \010
 CONCAT GF@counter GF@counter string@a
 JUMP while
 LABEL end
+
+WRITE bool@FaLsE
+CREATEFramE
+PUSHFRAME
+popframe
+call foo
+return
+break
+exit int@42
+pushs int@42
+pops LF@promenna
+DPRINT GF@error_code
+and LF@logic bool@false LF@true
+or LF@logic bool@false LF@true
+NOT LF@logic bool@false
+lt LF@relation int@42 int@21
+gt LF@relation string@cool string@kůl
+eq LF@relation nil@nil LF@notnil
+INT2CHAR LF@promenna int@69
+stri2int GF@hej GF@stringos int@7
+read GF@lol type@bool
+strlen LF@barfooRR string@ahojahoj
+concat GF@prom string@stringos GF@retezec1
+type GF@prom string@dymka
+add GF@add int@21 int@15
+sub GF@sub int@21 LF@subik
+mul GF@mul LF@idiving int@15
+idiv GF@idiv int@21 int@15
+setchar GF@prom int@42 int@0
+getchar LF@int string@lolisek int@2
