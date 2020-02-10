@@ -133,3 +133,4 @@ if($xmlWriter)
     $xmlWriter->endElement(); # </program>
     $xmlWriter->endDocument();
 }
+#END of file
