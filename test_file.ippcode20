@@ -7,9 +7,9 @@ LABEL while
 
 
 JUMPIFEQ end GF@counter string@aaa
-WRITE string@counter \032 obsahuje \032
+WRITE string@counter\032obsahuje\032
 WRITE GF@counter
-WRITE string@ \010
+WRITE string@\010
 CONCAT GF@counter GF@counter string@a
 JUMP while
 LABEL end
@@ -42,4 +42,28 @@ sub GF@sub int@21 LF@subik
 mul GF@mul LF@idiving int@15
 idiv GF@idiv int@21 int@15
 setchar GF@prom int@42 int@0
-getchar LF@int string@lolisek int@2
+getchar LF@int LF@hovinko LF@tu
+break
+break
+break
+break
+break
+break
+break
+break
+break
+break
+break
+break
+break
+break
+break
+break
+break
+break
+break
+break
+break
+getchar LF@int LF@int LF@ok
+
+break    #

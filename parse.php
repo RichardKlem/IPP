@@ -22,7 +22,6 @@ function get_type_and_value($opcode, $arg){
         $value = $arg;
     }
     elseif (!strcmp($opcode, "EXIT")){
-
         if(((preg_match("/(int)@(.*)/", $arg, $matches)) != 1) || ($matches[2] < 0 || $matches[2] > 49))
             exit(57);
         else {
@@ -41,7 +40,7 @@ function get_type_and_value($opcode, $arg){
             if (!strcmp($type, 'bool'))
                 $value = strtolower($value);
         }
-        elseif (!strcmp($arg, "nil")){
+        elseif (preg_match("/(nil)@/", $arg)){
             $type = "nil";
             $value = "nil";
         }
@@ -50,7 +49,25 @@ function get_type_and_value($opcode, $arg){
             $value = $arg;
         }
     }
+    global $zero_arg_opcodes, $opcodes;
+    if((!strcmp($type,"")) && (!in_array($opcode, $zero_arg_opcodes)) && (in_array($opcode, $opcodes)))
+        exit(23);
     return array($type, $value);
+}
+
+/**
+ * @param $comp array array of args
+ * @param $num_of_correct_args int expected num of args
+ * @return int 0 if there are correct num of args, 1 else
+ */
+function too_many_args($comp, $num_of_correct_args){
+    # comp always contains opcode and newline character, so we need to add 2 to get needed number
+    if (count($comp) == $num_of_correct_args + 2)
+        return 0;
+    elseif((!strcmp($comp[$num_of_correct_args + 1], "#")) || (!strcmp($comp[$num_of_correct_args + 1], "")))
+        return 0;
+    else
+        return 1;
 }
 if(key_exists("help", $options)){
         echo "Toto je napoveda\n";
@@ -92,9 +109,14 @@ if($xmlWriter)
             $args = array("arg1", "arg2", "arg3");
             $type = "";
             $value = "";
+            if(in_array($comp[0], $zero_arg_opcodes))
+                if(too_many_args($comp, 0))
+                    exit(23);
             if(in_array($comp[0], $one_arg_opcodes)){
                 $memXmlWriter->startElement('arg1');
                 list($type, $value) = get_type_and_value($comp[0], $comp[1]);
+                if(too_many_args($comp, 1))
+                    exit(23);
                 $memXmlWriter->writeAttribute('type', $type);
                 $memXmlWriter->text($value);
                 $memXmlWriter->endElement();
@@ -103,6 +125,8 @@ if($xmlWriter)
                 for($j = 0; $j < 2; $j++){
                     $memXmlWriter->startElement($args[$j]);
                     list($type, $value) = get_type_and_value($comp[0], $comp[$j + 1]);
+                    if(too_many_args($comp, 2))
+                        exit(23);
                     $memXmlWriter->writeAttribute('type', $type);
                     $memXmlWriter->text($value);
                     $memXmlWriter->endElement();
@@ -112,6 +136,8 @@ if($xmlWriter)
                 for($j = 0; $j < 3; $j++){
                     $memXmlWriter->startElement($args[$j]);
                     list($type, $value) = get_type_and_value($comp[0], $comp[$j + 1]);
+                    if(too_many_args($comp, 3))
+                        exit(23);
                     $memXmlWriter->writeAttribute('type', $type);
                     $memXmlWriter->text($value);
                     $memXmlWriter->endElement();
