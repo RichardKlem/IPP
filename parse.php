@@ -1,5 +1,5 @@
 <?php
-
+$batchSize = 1;
 $zero_arg_opcodes = array("CREATEFRAME", "PUSHFRAME", "POPFRAME", "RETURN", "BREAK");
 $one_arg_opcodes = array("DEFVAR", "CALL", "PUSHS", "POPS", "WRITE", "LABEL", "JUMP", "EXIT", "DPRINT");
 $two_arg_opcodes = array("MOVE", "NOT", "INT2CHAR", "READ", "STRLEN", "TYPE");
@@ -11,7 +11,7 @@ $opcodes = array("CREATEFRAME", "PUSHFRAME", "POPFRAME", "RETURN", "BREAK", "DEF
 
 $shortopts  = "";
 $shortopts .= "h";
-$longopts  = array("help",);
+$longopts  = array("help", "stats:", "loc", "comments", "jumps");
 $options = getopt($shortopts, $longopts);
 
 function get_type_and_value($opcode, $arg){
@@ -29,8 +29,12 @@ function get_type_and_value($opcode, $arg){
             $value = $matches[2];
         }
     }
+    elseif ((!strcmp($opcode, "READ")) && (preg_match("/(string|int|bool)/", $arg, $matches))){
+        $type = "type";
+        $value = $matches[0];
+    }
     else {
-        if (preg_match("/[GL]F@/", $arg)) {
+        if (preg_match("/[GLT]F@/", $arg)) {
             $type = "var";
             $value = $arg;
         }
@@ -56,6 +60,7 @@ function get_type_and_value($opcode, $arg){
 }
 
 /**
+ * @brief Function represent question "Is there too many args?". Returns 0 if answer is false, 1 otherwise.
  * @param $comp array array of args
  * @param $num_of_correct_args int expected num of args
  * @return int 0 if there are correct num of args, 1 else
@@ -77,7 +82,7 @@ if(key_exists("help", $options)){
 # _________XMLWrite__________
 $xmlWriter = new XMLWriter();
 $xmlWriter->openUri('php://output');
-$xmlWriter->setIndent(false);
+$xmlWriter->setIndent(true);
 if($xmlWriter)
 {
     $xmlWriter->startDocument('1.0','UTF-8');
@@ -92,10 +97,18 @@ if($xmlWriter)
     $i = 1;
     $input = fopen('php://stdin', 'r');
 
-    if(!strcmp(strtolower($line = fgets($input)),'.ippcode20'))
+    $line = trim(fgets($input)); #trim cuts whitespaces on both sides of input line
+    $line = strtolower($line);
+    $resultos = preg_match('/\.ippcode20/', $line);
+
+    if ($resultos != 1)
         exit(21);
 
     $line = fgets($input);
+    $comment_index = strpos($line, "#");
+    if ($comment_index !== false)
+        $line = substr($line, 0, $comment_index);
+    #echo $line;
     while($line)
     {
         $comp = preg_split('/\s+/', $line);
@@ -125,6 +138,7 @@ if($xmlWriter)
                 for($j = 0; $j < 2; $j++){
                     $memXmlWriter->startElement($args[$j]);
                     list($type, $value) = get_type_and_value($comp[0], $comp[$j + 1]);
+                    #var_dump($comp);
                     if(too_many_args($comp, 2))
                         exit(23);
                     $memXmlWriter->writeAttribute('type', $type);
@@ -153,10 +167,19 @@ if($xmlWriter)
             $xmlWriter->writeRaw($batchXmlString);
         }
         $line = fgets($input);
+        $comment_index = strpos($line, "#");
+        if ($comment_index !== false)
+            $line = substr($line, 0, $comment_index);
+        #echo $line;
     }
     $memXmlWriter->flush();
     unset($memXmlWriter);
     $xmlWriter->endElement(); # </program>
     $xmlWriter->endDocument();
 }
+
 #END of file
+
+#echo $options;
+
+#var_dump($options);
