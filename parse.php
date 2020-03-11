@@ -29,20 +29,18 @@ function get_type_and_value($opcode, $arg){
             $value = $matches[2];
         }
     }
-    elseif ((!strcmp($opcode, "READ")) && (preg_match("/(string|int|bool)/", $arg, $matches))){
-        $type = "type";
-        $value = $matches[0];
-    }
     else {
         if (preg_match("/[GLT]F@/", $arg)) {
             $type = "var";
             $value = $arg;
         }
-        elseif (preg_match("/(string|int|bool|type)@(.*)/", $arg, $matches)) {
+        elseif (preg_match("/(string|int|type)@(.*)/", $arg, $matches)) {
             $type = $matches[1];
             $value = $matches[2];
-            if (!strcmp($type, 'bool'))
-                $value = strtolower($value);
+        }
+        elseif (preg_match('/bool@(true|false)/', $arg, $matches)){
+            $type = "bool";
+            $value = strtolower($matches[1]);
         }
         elseif (preg_match("/(nil)@/", $arg)){
             $type = "nil";
@@ -67,9 +65,7 @@ function get_type_and_value($opcode, $arg){
  */
 function too_many_args($comp, $num_of_correct_args){
     # comp always contains opcode and newline character, so we need to add 2 to get needed number
-    if (count($comp) == $num_of_correct_args + 2)
-        return 0;
-    elseif((!strcmp($comp[$num_of_correct_args + 1], "#")) || (!strcmp($comp[$num_of_correct_args + 1], "")))
+    if (count($comp) == $num_of_correct_args + 1)
         return 0;
     else
         return 1;
@@ -78,7 +74,6 @@ if(key_exists("help", $options)){
         echo "Toto je napoveda\n";
         exit(0);
 }
-
 # _________XMLWrite__________
 $xmlWriter = new XMLWriter();
 $xmlWriter->openUri('php://output');
@@ -98,19 +93,32 @@ if($xmlWriter)
     $input = fopen('php://stdin', 'r');
 
     $line = trim(fgets($input)); #trim cuts whitespaces on both sides of input line
+    while($line[0] === "" || $line[0] === "#"){
+        $line = fgets($input);
+    }
     $line = strtolower($line);
     $resultos = preg_match('/\.ippcode20/', $line);
 
     if ($resultos != 1)
         exit(21);
 
-    $line = fgets($input);
-    $comment_index = strpos($line, "#");
-    if ($comment_index !== false)
-        $line = substr($line, 0, $comment_index);
+    while (!feof($input)) {
+        $line = fgets($input);
+        $line = rtrim($line, "\r");  # delete carriage return
+        $line = rtrim($line, "\n");  # delete newline
+        # comments are thrown away
+        $comment_index = strpos($line, "#");
+        if ($comment_index !== false) {
+            $line = substr($line, 0, $comment_index);
+            $line = rtrim($line);
+        }
+        if ($line !== "")
+            break;
+    }
     #echo $line;
     while($line)
     {
+        #echo $line;
         $comp = preg_split('/\s+/', $line);
         $comp[0] = strtoupper($comp[0]);
         if((strcmp($comp[0], "#")) && (strcmp($comp[0], ""))){
@@ -127,31 +135,58 @@ if($xmlWriter)
                     exit(23);
             if(in_array($comp[0], $one_arg_opcodes)){
                 $memXmlWriter->startElement('arg1');
-                list($type, $value) = get_type_and_value($comp[0], $comp[1]);
                 if(too_many_args($comp, 1))
                     exit(23);
+                list($type, $value) = get_type_and_value($comp[0], $comp[1]);
                 $memXmlWriter->writeAttribute('type', $type);
                 $memXmlWriter->text($value);
                 $memXmlWriter->endElement();
             }
             elseif(in_array($comp[0], $two_arg_opcodes)){
-                for($j = 0; $j < 2; $j++){
-                    $memXmlWriter->startElement($args[$j]);
-                    list($type, $value) = get_type_and_value($comp[0], $comp[$j + 1]);
-                    #var_dump($comp);
+                if ($comp[0] === "READ"){
+
+                    $memXmlWriter->startElement("arg1");
                     if(too_many_args($comp, 2))
+                        exit(23);
+                    elseif (preg_match("/[GLT]F@/", $comp[1])) {
+                        $type = "var";
+                        $value = $comp[1];
+                    }
+                    else
+                        exit(23);
+                    $memXmlWriter->writeAttribute('type', $type);
+                    $memXmlWriter->text($value);
+                    $memXmlWriter->endElement();
+
+                    $memXmlWriter->startElement("arg2");
+                    if (preg_match("/(string|int|bool)/", $comp[2], $matches)){
+                        $type = "type";
+                        $value = $matches[0];
+                    }
+                    else
                         exit(23);
                     $memXmlWriter->writeAttribute('type', $type);
                     $memXmlWriter->text($value);
                     $memXmlWriter->endElement();
                 }
+                else{
+                    for($j = 0; $j < 2; $j++){
+                        $memXmlWriter->startElement($args[$j]);
+                        if(too_many_args($comp, 2))
+                            exit(23);
+                        list($type, $value) = get_type_and_value($comp[0], $comp[$j + 1]);
+                        $memXmlWriter->writeAttribute('type', $type);
+                        $memXmlWriter->text($value);
+                        $memXmlWriter->endElement();
+                    }
+                }
             }
             elseif(in_array($comp[0], $three_arg_opcodes)){
                 for($j = 0; $j < 3; $j++){
                     $memXmlWriter->startElement($args[$j]);
-                    list($type, $value) = get_type_and_value($comp[0], $comp[$j + 1]);
                     if(too_many_args($comp, 3))
                         exit(23);
+                    list($type, $value) = get_type_and_value($comp[0], $comp[$j + 1]);
                     $memXmlWriter->writeAttribute('type', $type);
                     $memXmlWriter->text($value);
                     $memXmlWriter->endElement();
@@ -167,10 +202,14 @@ if($xmlWriter)
             $xmlWriter->writeRaw($batchXmlString);
         }
         $line = fgets($input);
+        $line = rtrim($line, "\r");  # delete carriage return
+        $line = rtrim($line, "\n");  # delete newline
+        # comments are thrown away
         $comment_index = strpos($line, "#");
-        if ($comment_index !== false)
+        if ($comment_index !== false){
             $line = substr($line, 0, $comment_index);
-        #echo $line;
+            $line = rtrim($line);
+        }
     }
     $memXmlWriter->flush();
     unset($memXmlWriter);
