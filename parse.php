@@ -19,7 +19,11 @@ function get_type_and_value($opcode, $arg){
     $value = "";
     if (in_array($opcode, array("LABEL", "JUMP", "CALL"))) {
         $type = "label";
-        $value = $arg;
+        if (preg_match('/^[\-\$&%*!?a-zA-Z_][\-\$&%*!?\w]*$/', $arg, $matches))
+            $value = $arg;
+        else
+            exit(23);
+
     }
     elseif (!strcmp($opcode, "EXIT")){
         if(((preg_match("/(int)@(.*)/", $arg, $matches)) != 1) || ($matches[2] < 0 || $matches[2] > 49))
@@ -30,9 +34,13 @@ function get_type_and_value($opcode, $arg){
         }
     }
     else {
-        if (preg_match("/[GLT]F@/", $arg)) {
-            $type = "var";
-            $value = $arg;
+        if (preg_match('/[GLT]F@(.*)/', $arg, $matches_0)){
+            if (preg_match('/^[\-\$&%*!?a-zA-Z_][\-\$&%*!?\w]*$/', $matches_0[1], $matches)){
+                $type = "var";
+                $value = $arg;
+            }
+            else
+                exit(23);
         }
         elseif (preg_match("/(string|int|type)@(.*)/", $arg, $matches)) {
             $type = $matches[1];
@@ -48,7 +56,10 @@ function get_type_and_value($opcode, $arg){
         }
         elseif (preg_match("/JUMPIFN?EQ/", $opcode)){
             $type = "label";
-            $value = $arg;
+            if (preg_match('/^[\-\$&%*!?a-zA-Z_][\-\$&%*!?\w]*$/', $arg, $matches))
+                $value = $arg;
+            else
+                exit(23);
         }
     }
     global $zero_arg_opcodes, $opcodes;
@@ -97,7 +108,7 @@ if($xmlWriter)
         $line = fgets($input);
     }
     $line = strtolower($line);
-    $resultos = preg_match('/\.ippcode20/', $line);
+    $resultos = preg_match('/^\.ippcode20$/', $line);
 
     if ($resultos != 1)
         exit(21);

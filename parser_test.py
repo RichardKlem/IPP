@@ -52,20 +52,21 @@ def main():
         with open(rc_file, "r") as rc_file:
             #print(test_file_name, php_return.returncode, int(rc_file.read()))
             rc_file_int = int(rc_file.read())
+            #print(rc_file_int, php_return.returncode)
             if rc_file_int == php_return.returncode:
                 if php_return.returncode == 0:
-                                            options = os.path.join(os.getcwd(), "jexamxml", "options")
-                                            command_jexamxml = "java -jar {}/jexamxml/jexamxml.jar {} {} /O:{}".format(os.getcwd(), output_file, actual_output_file, options)
-                                            ret_code = (subprocess.run(command_jexamxml, shell=True,
-                                                                       universal_newlines=True)).returncode
-                                            if ret_code in [0]:
-                                                passed_count += 1
-                                                print(
-                                                    Bcolors.OKGREEN + Bcolors.BOLD + 'PASSED ' + Bcolors.ENDC + test_file_name)
-                                                os.remove(actual_output_file) # remove
-                                            else:
-                                                failed_count += 1
-                                                print(Bcolors.FAIL + Bcolors.BOLD + 'FAILED ' + Bcolors.ENDC + test_file_name)
+                    options = os.path.join(os.getcwd(), "jexamxml", "options")
+                    command_jexamxml = "java -jar {}/jexamxml/jexamxml.jar {} {} /O:{}".format(os.getcwd(), output_file, actual_output_file, options)
+                    ret_code = (subprocess.run(command_jexamxml, shell=True,
+                                               universal_newlines=True)).returncode
+                    if ret_code in [0]:
+                        passed_count += 1
+                        print(
+                            Bcolors.OKGREEN + Bcolors.BOLD + 'PASSED ' + Bcolors.ENDC + test_file_name)
+                        os.remove(actual_output_file) # remove
+                    else:
+                        failed_count += 1
+                        print(Bcolors.FAIL + Bcolors.BOLD + 'FAILED ' + Bcolors.ENDC + test_file_name)
                 else:
                     passed_count += 1
                     print(Bcolors.OKGREEN + Bcolors.BOLD + 'PASSED ' + Bcolors.ENDC + test_file_name)
@@ -112,7 +113,8 @@ def main():
         
         """
         try:
-            os.remove(actual_output_file, )
+            pass
+            #os.remove(actual_output_file, )
         except OSError:
             pass
     print(Bcolors.OKGREEN + "\n{} passed\n".format(passed_count) + Bcolors.FAIL + "{} failed".format(failed_count)
