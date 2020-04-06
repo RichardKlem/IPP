@@ -24,6 +24,8 @@ three_arg_opcodes = ['ADD', 'SUB', 'MUL', 'IDIV', 'LT', 'GT', 'EQ', 'AND', 'OR',
 
 program_attributes = ['language', 'name', 'description']
 instruction_attributes = ['order', 'opcode']
+argument_attributes = ['type']
+symbol_types = ['var', 'int', 'bool', 'string', 'nil', 'label', 'type']
 
 inst2method_dict = {'CREATEFRAME': createframe_i, 'PUSHFRAME': pushframe_i, 'POPFRAME': popframe_i,
                     'RETURN': return_i, 'BREAK': break_i, 'DEFVAR': defvar_i, 'CALL': call_i,
