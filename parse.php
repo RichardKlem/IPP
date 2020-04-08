@@ -9,7 +9,6 @@ $opcodes = array("CREATEFRAME", "PUSHFRAME", "POPFRAME", "RETURN", "BREAK", "DEF
     "LABEL", "JUMP", "EXIT", "DPRINT", "MOVE", "NOT", "INT2CHAR", "READ", "STRLEN", "TYPE", "ADD", "SUB", "MUL", "IDIV",
     "LT", "GT", "EQ", "AND", "OR", "STRI2INT", "CONCAT", "GETCHAR", "SETCHAR", "JUMPIFEQ", "JUMPIFNEQ");
 
-$shortopts  = "";
 $shortopts .= "h";
 $longopts  = array("help", "stats:", "loc", "comments", "jumps");
 $options = getopt($shortopts, $longopts);
