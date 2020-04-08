@@ -35,8 +35,12 @@ class Interpret:
     def __init__(self, source_file, input_file):
         if source_file:
             self.source_data = source_file
+        else:
+            self.source_data = sys.stdin
         if input_file:
             self.input_data = input_file
+        else:
+            self.input_data = sys.stdin
         # self.local_frame = self.frame_stack[-1]
 
     @staticmethod

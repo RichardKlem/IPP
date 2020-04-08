@@ -1,12 +1,13 @@
 import re
 import sys
+import interpret as i
 
 
-def createframe_i(interpret, instruction):
+def createframe_i(interpret: i.Interpret, instruction):
     interpret.tmp_frame = {}
 
 
-def pushframe_i(interpret, instruction):
+def pushframe_i(interpret: i.Interpret, instruction):
     if interpret.tmp_frame is None:
         exit(55)
     interpret.frame_stack.append(interpret.tmp_frame)
@@ -14,7 +15,7 @@ def pushframe_i(interpret, instruction):
     interpret.tmp_frame = None
 
 
-def popframe_i(interpret, instruction):
+def popframe_i(interpret: i.Interpret, instruction):
     if len(interpret.frame_stack) == 0:
         exit(55)
     interpret.tmp_frame = interpret.frame_stack.pop()
@@ -24,13 +25,13 @@ def popframe_i(interpret, instruction):
         interpret.local_frame = None
 
 
-def return_i(interpret, instruction):
+def return_i(interpret: i.Interpret, instruction):
     if len(interpret.call_stack) == 0:
         exit(56)
     interpret.inst_index = interpret.call_stack.pop()
 
 
-def break_i(interpret, instruction):
+def break_i(interpret: i.Interpret, instruction):
     output = """Aktualni instrukce = {}\n
                 Operacni cislo instrukce = {}\n\n
                 Globalni ramec = {}\n
@@ -45,7 +46,7 @@ def break_i(interpret, instruction):
     print(output, file=sys.stderr)
 
 
-def defvar_i(interpret, instruction):
+def defvar_i(interpret: i.Interpret, instruction):
     regex = re.match(r'^([GLT]F)@([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', list(instruction)[0].text)
     if regex.lastindex != 2:
         exit(32)
@@ -65,18 +66,18 @@ def defvar_i(interpret, instruction):
         interpret.tmp_frame[variable] = None
 
 
-def call_i(interpret, instruction):
+def call_i(interpret: i.Interpret, instruction):
     if list(instruction)[0].text not in interpret.label_dict.keys():
         exit(52)
     interpret.call_stack.append(interpret.inst_index + 1)
     interpret.inst_index = interpret.label_dict[list(instruction)[0].text]
 
 
-def pushs_i(interpret, instruction):
+def pushs_i(interpret: i.Interpret, instruction):
     interpret.data_stack.append(list(instruction)[0].text)
 
 
-def pops_i(interpret, instruction):
+def pops_i(interpret: i.Interpret, instruction):
     if len(interpret.data_stack) == 0:
         exit(56)
 
@@ -91,7 +92,7 @@ def pops_i(interpret, instruction):
         frame[variable] = interpret.data_stack.pop()
 
 
-def write_i(interpret, instruction):
+def write_i(interpret: i.Interpret, instruction):
     if list(instruction)[0].attrib.keys() == 'bool':
         print(list(instruction)[0].text.lower(), end='')
     elif list(instruction)[0].text == 'nil@nil':
@@ -118,17 +119,17 @@ def write_i(interpret, instruction):
             exit(32)
 
 
-def label_i(interpret, instruction):
+def label_i(interpret: i.Interpret, instruction):
     pass
 
 
-def jump_i(interpret, instruction):
+def jump_i(interpret: i.Interpret, instruction):
     if list(instruction)[0].text not in interpret.label_dict.keys():
         exit(52)
     interpret.inst_index = interpret.label_dict[list(instruction)[0].text]
 
 
-def exit_i(interpret, instruction):
+def exit_i(interpret: i.Interpret, instruction):
     retcode = -1
     try:
         retcode = int(list(instruction)[0].text)
@@ -140,7 +141,7 @@ def exit_i(interpret, instruction):
         exit(57)
 
 
-def dprint_i(interpret, instruction):
+def dprint_i(interpret: i.Interpret, instruction):
     regex = re.match(r'([GLT]F)@([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', list(instruction)[
         0].text)
     if regex is None or regex.lastindex != 2:
@@ -150,7 +151,7 @@ def dprint_i(interpret, instruction):
     print(symb1_val, file=sys.stderr)
 
 
-def move_i(interpret, instruction):
+def move_i(interpret: i.Interpret, instruction):
     dest = None
     regex_dest = re.match(r'([GLT]F)@([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', list(instruction)[
         0].text)
@@ -172,11 +173,37 @@ def move_i(interpret, instruction):
         interpret.tmp_frame[dest] = src
 
 
-def not_i(interpret, instruction):
-    ...
+def not_i(interpret: i.Interpret, instruction):
+    regex = re.match(r'^(?:([GLT]F)@)?([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', list(instruction)[
+        0].text)
+    if regex.lastindex != 2:
+        exit(32)
+    interpret.check_var_in_frame(regex.group(2), regex.group(1))
+    if list(instruction)[1].get('type') == 'var':
+        symb1_type, symb1_value = interpret.check_arg_type_and_get_value(list(instruction)[
+        0])
+        symb1_type = interpret.get_type_from_var_value(symb1_value)
+    else:
+        symb1_value = list(instruction)[1].text
+        symb1_type = interpret.get_type_from_var_value(symb1_value)
+    if symb1_type != 'bool':
+        exit(32)
+    if symb1_value == 'true':
+        symb1_value = 'false'
+    else:
+        symb1_value = 'true'
+
+    var_frame = regex.group(1)
+    var_name = regex.group(2)
+    if var_frame == 'GF':
+        interpret.global_frame[var_name] = symb1_value
+    elif var_frame == 'LF':
+        interpret.local_frame[var_name] = symb1_value
+    elif var_frame == 'TF':
+        interpret.tmp_frame[var_name] = symb1_value
 
 
-def int2char_i(interpret, instruction):
+def int2char_i(interpret: i.Interpret, instruction):
     regex = re.match(r'^(?:([GLT]F)@)?([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', list(instruction)[
         0].text)
     if regex.lastindex != 2:
@@ -207,7 +234,7 @@ def int2char_i(interpret, instruction):
         interpret.tmp_frame[var_value] = symb1_val
 
 
-def read_i(interpret, instruction):
+def read_i(interpret: i.Interpret, instruction):
     regex_var = re.match(r'^(?:([GLT]F)@)?([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', list(instruction)[
         0].text)
     if regex_var is None or regex_var.lastindex != 2:
@@ -245,7 +272,7 @@ def read_i(interpret, instruction):
         interpret.tmp_frame[var_name] = read_input
 
 
-def strlen_i(interpret, instruction):
+def strlen_i(interpret: i.Interpret, instruction):
     regex_var = re.match(r'^(?:([GLT]F)@)?([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', list(instruction)[
         0].text)
     if regex_var is None or regex_var.lastindex != 2:
@@ -256,7 +283,7 @@ def strlen_i(interpret, instruction):
     symb1_type, symb1_val = interpret.check_arg_type_and_get_value(list(instruction)[1])
 
 
-def type_i(interpret, instruction):
+def type_i(interpret: i.Interpret, instruction):
     regex_var = re.match(r'^(?:([GLT]F)@)?([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', list(instruction)[
         0].text)
     if regex_var.lastindex != 2:
@@ -276,7 +303,7 @@ def type_i(interpret, instruction):
         interpret.tmp_frame[var_name] = symb1_type
 
 
-def add_i(interpret, instruction):
+def add_i(interpret: i.Interpret, instruction):
     regex_var = re.match(r'^(?:([GLT]F)@)?([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', list(instruction)[
         0].text)
     if regex_var.lastindex != 2:
@@ -305,7 +332,7 @@ def add_i(interpret, instruction):
         interpret.tmp_frame[var_value] = result
 
 
-def sub_i(interpret, instruction):
+def sub_i(interpret: i.Interpret, instruction):
     regex_var = re.match(r'^(?:([GLT]F)@)?([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', list(instruction)[
         0].text)
     if regex_var.lastindex != 2:
@@ -333,7 +360,7 @@ def sub_i(interpret, instruction):
         interpret.tmp_frame[var_value] = result
 
 
-def mul_i(interpret, instruction):
+def mul_i(interpret: i.Interpret, instruction):
     regex_var = re.match(r'^(?:([GLT]F)@)?([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', list(instruction)[
         0].text)
     if regex_var.lastindex != 2:
@@ -361,7 +388,7 @@ def mul_i(interpret, instruction):
         interpret.tmp_frame[var_value] = result
 
 
-def idiv_i(interpret, instruction):
+def idiv_i(interpret: i.Interpret, instruction):
     regex_var = re.match(r'^(?:([GLT]F)@)?([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', list(instruction)[
         0].text)
     if regex_var.lastindex != 2:
@@ -391,43 +418,374 @@ def idiv_i(interpret, instruction):
         interpret.tmp_frame[var_value] = result
 
 
-def lt_i(interpret, instruction):
-    ...
+def lt_i(interpret: i.Interpret, instruction):
+    regex = re.match(r'^(?:([GLT]F)@)?([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', list(instruction)[
+        0].text)
+    if regex.lastindex != 2:
+        exit(32)
+    interpret.check_var_in_frame(regex.group(2), regex.group(1))
+    if list(instruction)[1].get('type') == 'var':
+        symb1_type, symb1_value = interpret.check_arg_type_and_get_value(list(instruction)[
+                                                                             1])
+        symb1_type = interpret.get_type_from_var_value(symb1_value)
+    else:
+        symb1_value = list(instruction)[1].text
+        symb1_type = interpret.get_type_from_var_value(symb1_value)
+
+    if list(instruction)[2].get('type') == 'var':
+        symb2_type, symb2_value = interpret.check_arg_type_and_get_value(list(instruction)[
+                                                                             2])
+        symb2_type = interpret.get_type_from_var_value(symb2_value)
+    else:
+        symb2_value = list(instruction)[2].text
+        symb2_type = interpret.get_type_from_var_value(symb2_value)
+
+    if interpret.not_any_in([symb1_type,symb2_type], ['int', 'bool', 'string']):
+        exit(32)
+    if symb1_type != symb2_type:
+        exit(53)
+    if symb1_value < symb2_value:
+        result = 'true'
+    else:
+        result = 'false'
+
+    var_frame = regex.group(1)
+    var_name = regex.group(2)
+    if var_frame == 'GF':
+        interpret.global_frame[var_name] = result
+    elif var_frame == 'LF':
+        interpret.local_frame[var_name] = result
+    elif var_frame == 'TF':
+        interpret.tmp_frame[var_name] = result
 
 
-def gt_i(interpret, instruction):
-    ...
+def gt_i(interpret: i.Interpret, instruction):
+    regex = re.match(r'^(?:([GLT]F)@)?([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', list(instruction)[
+        0].text)
+    if regex.lastindex != 2:
+        exit(32)
+    interpret.check_var_in_frame(regex.group(2), regex.group(1))
+    if list(instruction)[1].get('type') == 'var':
+        symb1_type, symb1_value = interpret.check_arg_type_and_get_value(list(instruction)[
+                                                                             1])
+        symb1_type = interpret.get_type_from_var_value(symb1_value)
+    else:
+        symb1_value = list(instruction)[1].text
+        symb1_type = interpret.get_type_from_var_value(symb1_value)
+
+    if list(instruction)[2].get('type') == 'var':
+        symb2_type, symb2_value = interpret.check_arg_type_and_get_value(list(instruction)[
+                                                                             2])
+        symb2_type = interpret.get_type_from_var_value(symb2_value)
+    else:
+        symb2_value = list(instruction)[2].text
+        symb2_type = interpret.get_type_from_var_value(symb2_value)
+    if interpret.not_any_in([symb1_type,symb2_type], ['int', 'bool', 'string']):
+        exit(32)
+    if symb1_type != symb2_type:
+        exit(53)
+    if symb1_value > symb2_value:
+        result = 'true'
+    else:
+        result = 'false'
+
+    var_frame = regex.group(1)
+    var_name = regex.group(2)
+    if var_frame == 'GF':
+        interpret.global_frame[var_name] = result
+    elif var_frame == 'LF':
+        interpret.local_frame[var_name] = result
+    elif var_frame == 'TF':
+        interpret.tmp_frame[var_name] = result
 
 
-def eq_i(interpret, instruction):
-    ...
+def eq_i(interpret: i.Interpret, instruction):
+    regex = re.match(r'^(?:([GLT]F)@)?([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', list(instruction)[
+        0].text)
+    if regex.lastindex != 2:
+        exit(32)
+    interpret.check_var_in_frame(regex.group(2), regex.group(1))
+    if list(instruction)[1].get('type') == 'var':
+        symb1_type, symb1_value = interpret.check_arg_type_and_get_value(list(instruction)[
+                                                                             1])
+        symb1_type = interpret.get_type_from_var_value(symb1_value)
+    else:
+        symb1_value = list(instruction)[1].text
+        symb1_type = interpret.get_type_from_var_value(symb1_value)
+
+    if list(instruction)[2].get('type') == 'var':
+        symb2_type, symb2_value = interpret.check_arg_type_and_get_value(list(instruction)[
+                                                                             2])
+        symb2_type = interpret.get_type_from_var_value(symb2_value)
+    else:
+        symb2_value = list(instruction)[2].text
+        symb2_type = interpret.get_type_from_var_value(symb2_value)
+
+    if interpret.not_any_in([symb1_type,symb2_type], ['int', 'bool', 'string', 'nil']):
+        exit(32)
+    if symb1_type != symb2_type:
+        exit(53)
+    if symb1_value == symb2_value:
+        result = 'true'
+    else:
+        result = 'false'
+
+    var_frame = regex.group(1)
+    var_name = regex.group(2)
+    if var_frame == 'GF':
+        interpret.global_frame[var_name] = result
+    elif var_frame == 'LF':
+        interpret.local_frame[var_name] = result
+    elif var_frame == 'TF':
+        interpret.tmp_frame[var_name] = result
 
 
-def and_i(interpret, instruction):
-    ...
+def and_i(interpret: i.Interpret, instruction):
+    regex = re.match(r'^(?:([GLT]F)@)?([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', list(instruction)[
+        0].text)
+    if regex.lastindex != 2:
+        exit(32)
+    interpret.check_var_in_frame(regex.group(2), regex.group(1))
+    if list(instruction)[1].get('type') == 'var':
+        symb1_type, symb1_value = interpret.check_arg_type_and_get_value(list(instruction)[
+                                                                             1])
+        symb1_type = interpret.get_type_from_var_value(symb1_value)
+    else:
+        symb1_value = list(instruction)[1].text
+        symb1_type = interpret.get_type_from_var_value(symb1_value)
+    if symb1_type != 'bool':
+        exit(32)
+
+    if list(instruction)[2].get('type') == 'var':
+        symb2_type, symb2_value = interpret.check_arg_type_and_get_value(list(instruction)[
+                                                                             2])
+        symb2_type = interpret.get_type_from_var_value(symb2_value)
+    else:
+        symb2_value = list(instruction)[2].text
+        symb2_type = interpret.get_type_from_var_value(symb2_value)
+    if symb2_type != 'bool':
+        exit(32)
+    if symb1_value == 'true' and symb2_value == 'true':
+        result = 'true'
+    else:
+        result = 'false'
+
+    var_frame = regex.group(1)
+    var_name = regex.group(2)
+    if var_frame == 'GF':
+        interpret.global_frame[var_name] = result
+    elif var_frame == 'LF':
+        interpret.local_frame[var_name] = result
+    elif var_frame == 'TF':
+        interpret.tmp_frame[var_name] = result
 
 
-def or_i(interpret, instruction):
-    ...
+def or_i(interpret: i.Interpret, instruction):
+    regex = re.match(r'^(?:([GLT]F)@)?([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', list(instruction)[
+        0].text)
+    if regex.lastindex != 2:
+        exit(32)
+    interpret.check_var_in_frame(regex.group(2), regex.group(1))
+    if list(instruction)[1].get('type') == 'var':
+        symb1_type, symb1_value = interpret.check_arg_type_and_get_value(list(instruction)[
+                                                                             1])
+        symb1_type = interpret.get_type_from_var_value(symb1_value)
+    else:
+        symb1_value = list(instruction)[1].text
+        symb1_type = interpret.get_type_from_var_value(symb1_value)
+    if symb1_type != 'bool':
+        exit(32)
+
+    if list(instruction)[2].get('type') == 'var':
+        symb2_type, symb2_value = interpret.check_arg_type_and_get_value(list(instruction)[
+                                                                             2])
+        symb2_type = interpret.get_type_from_var_value(symb2_value)
+    else:
+        symb2_value = list(instruction)[2].text
+        symb2_type = interpret.get_type_from_var_value(symb2_value)
+    if symb2_type != 'bool':
+        exit(32)
+    if symb1_value == 'true' or symb2_value == 'true':
+        result = 'true'
+    else:
+        result = 'false'
+
+    var_frame = regex.group(1)
+    var_name = regex.group(2)
+    if var_frame == 'GF':
+        interpret.global_frame[var_name] = result
+    elif var_frame == 'LF':
+        interpret.local_frame[var_name] = result
+    elif var_frame == 'TF':
+        interpret.tmp_frame[var_name] = result
 
 
-def str2int_i(interpret, instruction):
-    ...
+def str2int_i(interpret: i.Interpret, instruction):
+    regex = re.match(r'^(?:([GLT]F)@)?([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', list(instruction)[
+        0].text)
+    if regex.lastindex != 2:
+        exit(32)
+    interpret.check_var_in_frame(regex.group(2), regex.group(1))
+    if list(instruction)[1].get('type') == 'var':
+        symb1_type, symb1_value = interpret.check_arg_type_and_get_value(list(instruction)[
+                                                                             1])
+        symb1_type = interpret.get_type_from_var_value(symb1_value)
+    else:
+        symb1_value = list(instruction)[1].text
+        symb1_type = interpret.get_type_from_var_value(symb1_value)
+    if symb1_type != 'string':
+        exit(53)
+
+    if list(instruction)[2].get('type') == 'var':
+        symb2_type, symb2_value = interpret.check_arg_type_and_get_value(list(instruction)[
+                                                                             2])
+        symb2_type = interpret.get_type_from_var_value(symb2_value)
+    else:
+        symb2_value = list(instruction)[2].text
+        symb2_type = interpret.get_type_from_var_value(symb2_value)
+    if symb2_type != 'int':
+        exit(53)
+
+    if len(symb1_value) < symb2_value:
+        exit(58)
+
+    result = ord(symb1_value[symb2_type])
+
+    var_frame = regex.group(1)
+    var_name = regex.group(2)
+    if var_frame == 'GF':
+        interpret.global_frame[var_name] = result
+    elif var_frame == 'LF':
+        interpret.local_frame[var_name] = result
+    elif var_frame == 'TF':
+        interpret.tmp_frame[var_name] = result
 
 
-def concat_i(interpret, instruction):
-    ...
+def concat_i(interpret: i.Interpret, instruction):
+    regex = re.match(r'^(?:([GLT]F)@)?([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', list(instruction)[
+        0].text)
+    if regex.lastindex != 2:
+        exit(32)
+    interpret.check_var_in_frame(regex.group(2), regex.group(1))
+    if list(instruction)[1].get('type') == 'var':
+        symb1_type, symb1_value = interpret.check_arg_type_and_get_value(list(instruction)[
+                                                                             1])
+        symb1_type = interpret.get_type_from_var_value(symb1_value)
+    else:
+        symb1_value = list(instruction)[1].text
+        symb1_type = interpret.get_type_from_var_value(symb1_value)
+    if symb1_type != 'string':
+        exit(32)
+
+    if list(instruction)[2].get('type') == 'var':
+        symb2_type, symb2_value = interpret.check_arg_type_and_get_value(list(instruction)[
+                                                                             2])
+        symb2_type = interpret.get_type_from_var_value(symb2_value)
+    else:
+        symb2_value = list(instruction)[2].text
+        symb2_type = interpret.get_type_from_var_value(symb2_value)
+    if symb2_type != 'string':
+        exit(32)
+
+    result = symb1_value + symb2_value
+
+    var_frame = regex.group(1)
+    var_name = regex.group(2)
+    if var_frame == 'GF':
+        interpret.global_frame[var_name] = result
+    elif var_frame == 'LF':
+        interpret.local_frame[var_name] = result
+    elif var_frame == 'TF':
+        interpret.tmp_frame[var_name] = result
 
 
-def getchar_i(interpret, instruction):
-    ...
+def getchar_i(interpret: i.Interpret, instruction):
+    regex = re.match(r'^(?:([GLT]F)@)?([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', list(instruction)[
+        0].text)
+    if regex.lastindex != 2:
+        exit(32)
+    interpret.check_var_in_frame(regex.group(2), regex.group(1))
+    if list(instruction)[1].get('type') == 'var':
+        symb1_type, symb1_value = interpret.check_arg_type_and_get_value(list(instruction)[
+                                                                             1])
+        symb1_type = interpret.get_type_from_var_value(symb1_value)
+    else:
+        symb1_value = list(instruction)[1].text
+        symb1_type = interpret.get_type_from_var_value(symb1_value)
+    if symb1_type != 'string':
+        exit(53)
+
+    if list(instruction)[2].get('type') == 'var':
+        symb2_type, symb2_value = interpret.check_arg_type_and_get_value(list(instruction)[
+                                                                             2])
+        symb2_type = interpret.get_type_from_var_value(symb2_value)
+    else:
+        symb2_value = list(instruction)[2].text
+        symb2_type = interpret.get_type_from_var_value(symb2_value)
+    if symb2_type != 'int':
+        exit(53)
+
+    if len(symb1_value) < symb2_value:
+        exit(58)
+
+    result = symb1_value[symb2_type]
+
+    var_frame = regex.group(1)
+    var_name = regex.group(2)
+    if var_frame == 'GF':
+        interpret.global_frame[var_name] = result
+    elif var_frame == 'LF':
+        interpret.local_frame[var_name] = result
+    elif var_frame == 'TF':
+        interpret.tmp_frame[var_name] = result
 
 
-def setchar_i(interpret, instruction):
-    ...
+def setchar_i(interpret: i.Interpret, instruction):
+    regex = re.match(r'^(?:([GLT]F)@)?([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', list(instruction)[
+        0].text)
+    if regex.lastindex != 2:
+        exit(32)
+    interpret.check_var_in_frame(regex.group(2), regex.group(1))
+
+    var_frame = regex.group(1)
+    var_name = regex.group(2)
+    var_value = interpret.get_value_from_var(var_name)
+    var_type = interpret.get_type_from_var_value(var_value)
+
+    if var_type != 'string':
+        exit(53)
+    if list(instruction)[1].get('type') == 'var':
+        symb1_type, symb1_value = interpret.check_arg_type_and_get_value(list(instruction)[1])
+        symb1_type = interpret.get_type_from_var_value(symb1_value)
+    else:
+        symb1_value = list(instruction)[1].text
+        symb1_type = interpret.get_type_from_var_value(symb1_value)
+    if symb1_type != 'int':
+        exit(53)
+
+    if list(instruction)[2].get('type') == 'var':
+        symb2_type, symb2_value = interpret.check_arg_type_and_get_value(list(instruction)[2])
+        symb2_type = interpret.get_type_from_var_value(symb2_value)
+    else:
+        symb2_value = list(instruction)[2].text[0]
+        symb2_type = interpret.get_type_from_var_value(symb2_value)
+    if symb2_type != 'string':
+        exit(53)
+
+    if len(symb1_value) < symb2_value:
+        exit(58)
+
+    result = var_value[:symb1_value] + symb2_value + var_value[symb1_value + 1:]
+
+    if var_frame == 'GF':
+        interpret.global_frame[var_name] = result
+    elif var_frame == 'LF':
+        interpret.local_frame[var_name] = result
+    elif var_frame == 'TF':
+        interpret.tmp_frame[var_name] = result
 
 
-def jumpifeq_i(interpret, instruction):
+def jumpifeq_i(interpret: i.Interpret, instruction):
     _, label = interpret.check_arg_type_and_get_value(list(instruction)[0])
     symb1_type, symb1_val = interpret.check_arg_type_and_get_value(list(instruction)[1])
     symb2_type, symb2_val = interpret.check_arg_type_and_get_value(list(instruction)[2])
@@ -446,7 +804,7 @@ def jumpifeq_i(interpret, instruction):
         interpret.inst_index = interpret.label_dict[label]
 
 
-def jumpifneq_i(interpret, instruction):
+def jumpifneq_i(interpret: i.Interpret, instruction):
     _, label = interpret.check_arg_type_and_get_value(list(instruction)[0])
     symb1_type, symb1_val = interpret.check_arg_type_and_get_value(list(instruction)[1])
     symb2_type, symb2_val = interpret.check_arg_type_and_get_value(list(instruction)[2])
