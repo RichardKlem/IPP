@@ -66,57 +66,15 @@ recursive_dir_walk($allopts["directory"]);
 foreach ($src_filenames as $src_file) {
     preg_match("/(.+)\.src/", $src_file, $file_core_name);
     if (!in_array($file_core_name[1].".out", $out_filenames))
-        mkdir($file_core_name[1].".out");
+        fclose(fopen($file_core_name[1].".out", "w"));
     if (!in_array($file_core_name[1].".in", $in_filenames))
-        mkdir($file_core_name[1].".in");
+        fclose(fopen($file_core_name[1].".in", "w"));
     if (!in_array($file_core_name[1].".rc", $rc_filenames)) {
-        mkdir($file_core_name[1].".rc");
+        fclose(fopen($file_core_name[1].".rc", "w"));
         echo "0" > $file_core_name[1].".rc";
     }
 }
 $html_output = "";
-
-$html_heading = "<!DOCTYPE html>
-<html lang=\"cs\">
-
-<head>
-<title>Výsledky testování
-</title>
-<style>
-table {
-  font-family: arial, sans-serif;
-  border-collapse: collapse;
-  width: 90%;
-}
-
-td, th {
-  border: 1px solid #dddddd;
-  text-align: left;
-  padding: 8px;
-}
-
-tr:nth-child(even) {
-  background-color: #F1F1F1;
-}
-</style>
-</head>";
-$html_name_of_test = "";
-$html_body = "
-<body>
-<h2>Výsledky testování {$html_name_of_test}</h2>
-<h3>{$passed_count}<span style=\"color: green; \">PASSED</span>, {$failed_count}<span style=\"color: red; \">FAILED</span></h3>
-<table>
-  <tr>
-    <th>Výsledek</th>
-    <th>Detail</th>
-    <th>Skript</th>
-    <th>Umístění souboru</th>
-  </tr>
-
-";
-$end_html = "</table>
-</body>
-</html>";
 
 function html_print_failed($test_name, $expected_rc, $actual_rc, $script='interpret.py'){
     global $html_output;
@@ -147,56 +105,73 @@ function parse_test($file_name, $interpret=false){
     global $allopts;
     global $passed_count;
     global $failed_count;
-    $succes = false;
+    $success = false;
     preg_match("/(.+)\.src/", $file_name, $file_core_name);
     $file_core_name = $file_core_name[1];
     $act_out_file = $file_core_name.".prsout";
     $expected_rc = intval(file_get_contents($file_core_name.".rc"));
     $command = "php7.4 {$allopts['parse-script']} < '{$file_name}' > '{$act_out_file}'";
     exec($command, $output, $retcode);
-    if ($retcode !== $expected_rc){
-        $failed_count++;
-        html_print_failed($file_core_name, $expected_rc, $retcode, 'parse.php');
-    }
-    else {
-        if ($retcode !== 0) {
-            $succes = true;
-            $passed_count++;
-            if (!$interpret)
-                html_print_passed($file_core_name, 'parse.php');
+    //both - parse i interpret
+    if($interpret) {
+        if ($retcode === 0){
+            $success = true;
         }
-        else {
-            $out_file = $file_core_name.".out";
-            $options = "/pub/courses/ipp/jexamxml/options";
-            $command_jexamxml = "java -jar {$allopts['jexamxml']} {$out_file} {$act_out_file} /O:{$options}";
-            exec($command_jexamxml, $jxml_output, $jxml_retcode);
-            if ($jxml_retcode !== 0) {
+        else{
+            if ($retcode !== $expected_rc){
                 $failed_count++;
                 html_print_failed($file_core_name, $expected_rc, $retcode, 'parse.php');
             }
-            else {
-                $passed_count++;
-                $succes = true;
-                if (!$interpret)
-                    html_print_passed($file_core_name, 'parse.php');
-            }
+            //kdyz je vse ok, tak nepisu ani fail ani pass, protoze pobezi jeste interpret.py
         }
     }
-    if (!$interpret)
-        unlink($act_out_file);
-    return $succes;
+    //parse-only
+    else {
+        //exit kody se nerovnaji
+        if ($retcode !== $expected_rc) {
+            $failed_count++;
+            html_print_failed($file_core_name, $expected_rc, $retcode, 'parse.php');
+        }
+        //exit kody se rovnaji
+        else {
+            if ($retcode !== 0){
+                $passed_count++;
+                html_print_passed($file_core_name, 'parse.php');
+            }
+            //exit kod je 0, musi se provest porovnani vystupu
+            else {
+                $out_file = $file_core_name.".out";
+                $options = "/pub/courses/ipp/jexamxml/options";
+                $command_jexamxml = "java -jar {$allopts['jexamxml']} {$out_file} {$act_out_file} /O:{$options}";
+                exec($command_jexamxml, $jxml_output, $jxml_retcode);
+                if ($jxml_retcode !== 0) {
+                    $failed_count++;
+                    html_print_failed($file_core_name, $expected_rc, $retcode, 'parse.php');
+                }
+                else {
+                    $passed_count++;
+                    if (!$interpret)
+                        html_print_passed($file_core_name, 'parse.php');
+                }
+            }
+        }
+        unlink($act_out_file); //smaze docasny vystup
+    } //konec parse-only vetve
+    return $success;
 }
 
 function interpret_test($file_name, $extension='.src'){
     global $allopts;
     global $failed_count;
     global $passed_count;
+    //pokud se pousti interpret, bud je int-only, pak je soubor .src, anebo musel byt both a tak tam musi byt taky
+    // soubor .src, i kdyz se pro interpret pouzije jiny jako vstup
     preg_match("/(.+)\.src/", $file_name, $file_core_name);
     $file_core_name = $file_core_name[1];
     $act_out_file = $file_core_name.".intout";
     $in_file = $file_core_name.".in";
     $out_file = $file_core_name.".out";
-    $file_name = $file_core_name.$extension;
+    $file_name = $file_core_name.$extension; //nastavi se jemno souboru s xml vstupem podle rezimu int-only nebo both
     $expected_rc = intval(file_get_contents($file_core_name.".rc"));
     $command = "python3.8 {$allopts['int-script']} --source={$file_name} --input={$in_file} > {$act_out_file}";
     exec($command, $output, $retcode);
@@ -204,24 +179,36 @@ function interpret_test($file_name, $extension='.src'){
         $failed_count++;
         html_print_failed($file_core_name, $expected_rc, $retcode);
     }
+    //exit kody se rovnaji
     else {
+        //interpret ma skoncit chybou, tak se i stalo, vse je ok => PASSED
         if ($retcode !== 0) {
             $passed_count++;
             html_print_passed($file_core_name);
         }
+        //je potreba porovnat vystup
         else {
             $command_diff = "diff '{$act_out_file}' '{$out_file}'";
             exec($command_diff, $diff_output);
-            if (count($diff_output) !== 0)
+            //kdyz diff neco vypise, tak jsou vystupy rozdilne => FAILED
+            if (count($diff_output) !== 0){
+                $failed_count++;
                 html_print_failed($file_core_name, $expected_rc, $retcode);
-            else
+            }
+            //vystupy jsou stejne, vse je ok => PASSED
+            else{
+                $passed_count++;
                 html_print_passed($file_core_name);
+            }
         }
     }
     if (file_exists($act_out_file))
-        unlink($act_out_file);
+        #unlink($act_out_file);
+    if (file_exists($file_core_name.$extension) and $extension !== ".src")
+        unlink($file_core_name.$extension);
 }
 
+$html_name_of_test = "";
 if ($allopts['parse-only']) {
     $html_name_of_test = "Výsledky testování skriptu parse.php";
     foreach ($src_filenames as $src_file) {
@@ -242,5 +229,49 @@ else {
             interpret_test($src_file, '.prsout');
     }
 }
+
+
+$html_heading = "<!DOCTYPE html>
+<html lang=\"cs\">
+
+<head>
+<title>Výsledky testování
+</title>
+<style>
+table {
+  font-family: arial, sans-serif;
+  border-collapse: collapse;
+  width: 90%;
+}
+
+td, th {
+  border: 1px solid #dddddd;
+  text-align: left;
+  padding: 8px;
+}
+
+tr:nth-child(even) {
+  background-color: #F1F1F1;
+}
+</style>
+</head>";
+
+$end_html = "</table>
+</body>
+</html>";
+
+$html_body = "
+<body>
+<h2>Výsledky testování {$html_name_of_test}</h2>
+<h3>{$passed_count}<span style=\"color: green; \">PASSED</span>, {$failed_count}<span style=\"color: red; \">FAILED</span></h3>
+<table>
+  <tr>
+    <th>Výsledek</th>
+    <th>Detail</th>
+    <th>Skript</th>
+    <th>Umístění souboru</th>
+  </tr>
+
+";
 $html_output = $html_heading.$html_body.$html_output.$end_html;
 echo $html_output;
