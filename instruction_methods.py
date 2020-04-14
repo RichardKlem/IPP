@@ -190,20 +190,27 @@ def int2char_i(interpret: i.Interpret, instruction):
 
 
 def read_i(interpret: i.Interpret, instruction):
-    print(interpret.input_data)
     var_frame, var_name = var_prepare(instruction, interpret)
     symb1_type, symb1_value = interpret.get_type_and_value_of_symb(list(instruction)[1])
     if symb1_value is None:
         exit(56)
     if symb1_type != 'type' or symb1_value not in ['int', 'bool', 'string']:
         exit(53)
-    try:
-        if interpret.input_data:
-            read_input = interpret.input_data.pop(0)
-            read_input.rstrip('\n\r')
-        else:
-            read_input = input()
 
+    if interpret.input_data is not None:
+        try:
+            read_input = interpret.input_data.pop(0)
+            read_input = read_input.rstrip('\n\r')
+        except:
+            symb1_value = 'nil'
+            read_input = 'nil'
+    else:
+        try:
+            read_input = input()
+        except:
+            symb1_value = 'nil'
+            read_input = 'nil'
+    try:
         if symb1_value == 'int':
             try:
                 read_input = int(read_input)
@@ -217,8 +224,11 @@ def read_i(interpret: i.Interpret, instruction):
                 read_input = 'nil'
                 symb1_value = 'nil'
         elif symb1_value == 'bool':
-            if read_input != 'true':
-                read_input = 'false'
+            read_input = read_input.lower()
+            if read_input == 'true':
+                read_input = True
+            else:
+                read_input = False
     except:
         symb1_value = 'nil'
         read_input = 'nil'
