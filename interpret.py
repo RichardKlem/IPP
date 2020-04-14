@@ -38,7 +38,8 @@ class Interpret:
         else:
             self.source_data = sys.stdin
         if input_file:
-            self.input_data = input_file
+            with open(input_file, "r") as file:
+                self.input_data = file.readlines()
         #else:
          #   self.input_data = sys.stdin
         # self.local_frame = self.frame_stack[-1]
@@ -279,6 +280,8 @@ class Interpret:
         except ET.ParseError:
             exit(31)
         program = xmlreader.getroot()
+        if len(program) == 0:
+            exit(0)
         if program.tag != 'program' or program.get('language') is None or self.not_any_in(
                 program.attrib.keys(), constants.program_attributes):
             exit(32)
@@ -310,7 +313,7 @@ class Interpret:
             if re.match(r'LABEL', instruction.get('opcode').upper()):
                 if list(instruction)[0].text in self.label_dict.keys():
                     exit(52)
-                if not re.match(r'([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', list(instruction)[0].text):
+                if not re.match(r'(^[\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', list(instruction)[0].text):
                     exit(32)
                 self.label_dict[list(instruction)[0].text] = self.inst_index
             self.inst_index = self.inst_index + 1
