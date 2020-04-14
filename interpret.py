@@ -39,8 +39,8 @@ class Interpret:
             self.source_data = sys.stdin
         if input_file:
             self.input_data = input_file
-        else:
-            self.input_data = sys.stdin
+        #else:
+         #   self.input_data = sys.stdin
         # self.local_frame = self.frame_stack[-1]
 
     @staticmethod
@@ -54,12 +54,57 @@ class Interpret:
     def inst2method(self, instruction: ET.Element):
         constants.inst2method_dict[str(instruction.get('opcode')).upper()](self, instruction)
 
-    def check_var_in_frame(self, var: str, frame='any'):
+    @staticmethod
+    def check_type_value_compatibility(symb_type: str, symb_value: str):
+        if symb_type == 'int':
+            try:
+                symb_value = int(symb_value)
+            except:
+                exit(32)
+        elif symb_type == 'bool':
+            if symb_value == 'true':
+                symb_value = True
+            elif symb_value == 'false':
+                symb_value = False
+            else:
+                exit(32)
+        elif symb_type == 'string':
+            if symb_value is None:
+                symb_value = ''
+            else:
+                symb_value = symb_value.replace("&lt", "<").replace("&gt", ">").replace("&amp",
+                                                                                        "&")
+        elif symb_type == 'nil':
+            symb_value = 'nil'
+        elif symb_type == 'label':
+            if symb_value is None:
+                exit(32)
+            symb_value = symb_value.replace("&lt", "<").replace("&gt", ">").replace("&amp", "&")
+            if not re.match(r'^[\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$', symb_value):
+                exit(32)
+        elif symb_type == 'type':
+            if symb_value not in ['int', 'bool', 'string', 'nil', 'label', 'type', 'var']:
+                exit(32)
+        else:
+            exit(32)  # neznamy typ argumentu
+        return symb_type, symb_value
+
+    def get_frame_of_var(self, var: str, frame='any'):
+        """
+        Podiva se, jestli je promenna v zadanem ramci, pripadne v jakemkoli ramci.
+        Kdyz ano, vrati tento ramec. Kdyz ne, vrati None.
+        Pokus o pristup k neexistujicimu ramci vede na exit code 55.
+        :param var: nazev promenne
+        :param frame: nazev ramce, defaultne jakykoli ramec
+        :return: ramec v kterem se promenna nachazi, jinak None
+        """
         if frame == 'any':
             if self.local_frame is not None and var in self.local_frame.keys():
                 return self.local_frame
             elif var in self.global_frame.keys():
                 return self.global_frame
+            if self.tmp_frame is not None and var in self.tmp_frame.keys():
+                return self.tmp_frame
             else:
                 return None
         elif frame == 'GF':
@@ -82,6 +127,52 @@ class Interpret:
             else:
                 return None
 
+    def get_type_and_value_of_var(self, argument: ET.Element):
+        """
+        Metoda ziska typ a hodnotu promenne ulozene na ramci.
+        Neexistujici ramec = exit(55)
+        Neexistujici promenna na eistujicim ramci = exit(54)
+        :param argument: objekt typu ET.Element, ktery predstavuje argument instrukce
+        :return: dvojice typ, hodnota promenne
+        """
+        if self.not_any_in([argument.get('type')], constants.symbol_types):
+            exit(32)  #neznamy typ argumentu
+        if argument.get('type') != 'var':
+            exit(53)  # spatny typ, musi byt var
+        regex = re.match(r'^(?:([GLT]F)@)([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', argument.text)
+        if regex is None:
+            exit(53)  # mozna 32? TODO
+        # najdu ramec v kterem promenna lezi
+        frame = self.get_frame_of_var(regex.group(2), regex.group(1))
+        if frame is None:  # None znamena, ze promenna nebyla nalezena
+            exit(54)  # neexistujici promenna v existujicim ramci
+        var_type, var_value = frame[regex.group(2)]
+        return var_type, var_value
+
+    def set_type_and_value_of_var(self, dest_var: ET.Element, var_type: str, var_value: str):
+        if self.not_any_in([dest_var.get('type')], constants.symbol_types):
+            exit(32)  #neznamy typ argumentu
+        if dest_var.get('type') != 'var':
+            exit(53)  # spatny typ, musi byt var
+        regex = re.match(r'^(?:([GLT]F)@)([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', dest_var.text)
+        if regex is None:
+            exit(53)  # mozna 32? TODO
+        # najdu ramec v kterem promenna lezi
+        frame = self.get_frame_of_var(regex.group(2), regex.group(1))
+        if frame is None:  # None znamena, ze promenna nebyla nalezena
+            exit(54)  # neexistujici promenna v existujicim ramci
+        var_type, var_value = self.check_type_value_compatibility(var_type, var_value)
+        frame[regex.group(2)] = tuple([var_type, var_value])
+
+    def get_type_and_value_of_symb(self, argument: ET.Element):
+        symb_type = argument.get('type')
+        symb_value = argument.text
+        if symb_type == 'var':
+            symb_type, symb_value = self.get_type_and_value_of_var(argument)
+        else:
+            symb_type, symb_value = self.check_type_value_compatibility(symb_type, symb_value)
+        return symb_type, symb_value
+
     def check_arg_type_and_get_value(self, argument: ET.Element):
         """
         Kontroluje zda je promenna v ramci.
@@ -93,42 +184,41 @@ class Interpret:
         if self.not_any_in([argument.get('type')], constants.symbol_types):
             exit(32)
         symb_type = argument.get('type')
-        regex = re.match(r'^(?:([GLT]F)@)?([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', argument.text)
+        regex = None
+        if argument.text is not None and symb_type == 'var':
+            regex = re.match(r'^(?:([GLT]F)@)([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', argument.text)
         symb_value = ''
-        if not regex:
+        # kdyz je regex None, tak byl v tetovem poli argumentu prazdny retezec, coz je povoleno
+        # pouze pro string, jinak je to chyba
+        if regex is None:
             if symb_type == 'string':
-                symb_value = argument.text
-            elif symb_type == 'int':
-                try:
-                    symb_value = int(argument.text)
-                except:
-                    exit(32)
+                symb_value = ''
             else:
                 exit(32)
         elif symb_type == 'int':
             try:
                 symb_value = int(argument.text)
             except:
-                exit(32)
+                exit(53)
         elif symb_type == 'var':
             if regex.lastindex != 2:
-                exit(32)
+                exit(53)
             symb_value = self.get_value_from_var(regex.group(2), regex.group(1))
         elif symb_type == 'bool':
             if regex.group(2) not in ['true', 'false']:
-                exit(32)
+                exit(53)
             symb_value = regex.group(2)
         elif symb_type == 'string':
             symb_value = regex.group(2)
         elif symb_type == 'nil':
             if regex.group(2) != 'nil':
-                exit(32)
+                exit(53)
             symb_value = 'nil'
         elif symb_type == 'label':
             symb_value = regex.group(2)
         elif symb_type == 'type':
             if argument.text not in ['int', 'bool', 'string', 'nil', 'label', 'type', 'var']:
-                exit(32)
+                exit(53)
             symb_value = argument.text
         return tuple([symb_type, symb_value])
 
@@ -179,7 +269,7 @@ class Interpret:
         exit(32)
 
     def get_value_from_var(self, var: str, frame='any'):
-        frame = self.check_var_in_frame(var, frame)
+        frame = self.get_frame_of_var(var, frame)
         if frame:
             return frame.get(var)
 
