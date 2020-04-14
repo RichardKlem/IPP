@@ -77,7 +77,24 @@ function recursive_dir_walk($dir){
         }
     }
 }
-recursive_dir_walk($allopts["directory"]);
+if ($allopts["recursive"])
+    recursive_dir_walk($allopts["directory"]);
+else {
+    foreach (scandir($allopts["directory"]) as $file_or_dir) {
+        preg_match("/(.+\.src)/", $file_or_dir, $match_src);
+        preg_match("/(.+\.out)/", $file_or_dir, $match_out);
+        preg_match("/(.+\.in)/", $file_or_dir, $match_in);
+        preg_match("/(.+\.rc)/", $file_or_dir, $match_rc);
+        if ($match_src)
+            array_push($src_filenames, $allopts["directory"].DIRECTORY_SEPARATOR.$match_src[1]);
+        if ($match_out)
+            array_push($out_filenames, $allopts["directory"].DIRECTORY_SEPARATOR.$match_out[1]);
+        if ($match_in)
+            array_push($in_filenames, $allopts["directory"].DIRECTORY_SEPARATOR.$match_in[1]);
+        if ($match_rc)
+            array_push($rc_filenames, $allopts["directory"].DIRECTORY_SEPARATOR.$match_rc[1]);
+    }
+}
 foreach ($src_filenames as $src_file) {
     preg_match("/(.+)\.src/", $src_file, $file_core_name);
     if (!in_array($file_core_name[1].".out", $out_filenames))
