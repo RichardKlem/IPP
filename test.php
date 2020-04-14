@@ -9,8 +9,23 @@ $allopts = array("help" => false, "directory" => getcwd(), "recursive" => false,
 $options = getopt($shortopts, $longopts);
 
 function print_help() {
-    //TODO
-    printf("Napoveda");
+    printf(
+        "Napoveda ke skriptu test.php
+  mozne argumenty:
+    help         = zobrazi tuto napovedu
+    directory    = volitelny argument urcujici slozku s testy, zakladni hodnota jen
+                   aktualni adresar
+    recursive    = volitelny argument urcujici rekurzivni pruchod adresarem s testy
+    parse-script = volitelny argument, umisteni skriptu parse.php, zakladni
+                   hodnota je './parse.php'
+    int-script   = volitelny argument, umisteni skriptu interpret.py, zakladni
+                   hodnota je './interpret.py'
+    parse-only   = volitelny argument, provadi se pouze test parseru, nesmi byt
+                   spolecne s --int-script ani s --int-only
+    int-only     = volitelny argument, provadi se pouze test interpretu, nesmi byt
+                   spolecne s --parse-script ani s --parse-only
+    jexamxml     = volitelny argument, umisteni .jar archivu JEXAMXML, zakladni
+                   hodnota je umisteni na serveru merlin");
 }
 
 foreach (array_keys($options) as $option) {
