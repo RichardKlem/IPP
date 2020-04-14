@@ -291,11 +291,11 @@ tr:nth-child(even) {
 $end_html = "</table>
 </body>
 </html>";
-
+$success_rate = intval($passed_count*100/($passed_count+$failed_count));
 $html_body = "
 <body>
 <h2>Výsledky testování {$html_name_of_test}</h2>
-<h3>{$passed_count}<span style=\"color: green; \">PASSED</span>, {$failed_count}<span style=\"color: red; \">FAILED</span></h3>
+<h3>{$passed_count}<span style=\"color: green; \"> PASSED</span>, {$failed_count}<span style=\"color: red; \"> FAILED</span>    Úspěšnost $success_rate %</h3>
 <table>
   <tr>
     <th>Výsledek</th>
