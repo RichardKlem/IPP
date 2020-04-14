@@ -34,6 +34,6 @@ inst2method_dict = {'CREATEFRAME': createframe_i, 'PUSHFRAME': pushframe_i, 'POP
                     'NOT': not_i, 'INT2CHAR': int2char_i, 'READ': read_i, 'STRLEN': strlen_i,
                     'TYPE': type_i, 'ADD': add_i, 'SUB': sub_i, 'MUL': mul_i,
                     'IDIV': idiv_i, 'LT': lt_i, 'GT': gt_i, 'EQ': eq_i,
-                    'AND': and_i, 'OR': or_i, 'STRI2INT': str2int_i, 'CONCAT': concat_i,
+                    'AND': and_i, 'OR': or_i, 'STRI2INT': stri2int_i, 'CONCAT': concat_i,
                     'GETCHAR': getchar_i, 'SETCHAR': setchar_i, 'JUMPIFEQ': jumpifeq_i,
                     'JUMPIFNEQ': jumpifneq_i}
