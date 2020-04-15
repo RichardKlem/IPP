@@ -2,13 +2,12 @@
 # Author: Richard Klem
 # Contact: xklemr00@fit.vutbr.cz
 # Created: 10.2.2020
-
+#
+# Hlavní
 import argparse
-import os
 import re
 import sys
 import xml.etree.ElementTree as ET
-# from xml.etree.ElementTree import Element, ElementTree
 
 import constants
 
@@ -40,9 +39,6 @@ class Interpret:
         if input_file:
             with open(input_file, "r") as file:
                 self.input_data = file.readlines()
-        #else:
-         #   self.input_data = sys.stdin
-        # self.local_frame = self.frame_stack[-1]
 
     @staticmethod
     def stop_interpreting(exit_code):

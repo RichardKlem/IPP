@@ -533,3 +533,300 @@ def jumpifneq_i(interpret: i.Interpret, instruction):
             interpret.inst_index = interpret.label_dict[label_name]
     else:
         exit(53)
+
+
+def clears_i(interpret: i.Interpret, instruction):
+    interpret.data_stack = []
+
+
+def adds_i(interpret: i.Interpret, instruction):
+    var_frame, var_name = var_prepare(instruction, interpret)
+
+    if len(interpret.data_stack) == 0:
+        exit(56)
+    symb2_type, symb2_val = interpret.data_stack.pop()
+    if len(interpret.data_stack) == 0:
+        exit(56)
+    symb1_type, symb1_val = interpret.data_stack.pop()
+
+    if symb1_val is None or symb2_val is None:
+        exit(56)
+    if symb1_type != 'int' or symb2_type != 'int':
+        exit(53)
+    result = symb1_val + symb2_val
+    var_frame[var_name] = tuple([symb1_type, result])
+
+
+def subs_i(interpret: i.Interpret, instruction):
+    var_frame, var_name = var_prepare(instruction, interpret)
+
+    if len(interpret.data_stack) == 0:
+        exit(56)
+    symb2_type, symb2_val = interpret.data_stack.pop()
+    if len(interpret.data_stack) == 0:
+        exit(56)
+    symb1_type, symb1_val = interpret.data_stack.pop()
+
+    if symb1_val is None or symb2_val is None:
+        exit(56)
+    if symb1_type != 'int' or symb2_type != 'int':
+        exit(53)
+    result = symb1_val - symb2_val
+    var_frame[var_name] = tuple([symb1_type, result])
+
+
+def muls_i(interpret: i.Interpret, instruction):
+    var_frame, var_name = var_prepare(instruction, interpret)
+
+    if len(interpret.data_stack) == 0:
+        exit(56)
+    symb2_type, symb2_val = interpret.data_stack.pop()
+    if len(interpret.data_stack) == 0:
+        exit(56)
+    symb1_type, symb1_val = interpret.data_stack.pop()
+
+    if symb1_val is None or symb2_val is None:
+        exit(56)
+    if symb1_type != 'int' or symb2_type != 'int':
+        exit(53)
+    result = symb1_val * symb2_val
+    var_frame[var_name] = tuple([symb1_type, result])
+
+
+def idivs_i(interpret: i.Interpret, instruction):
+    var_frame, var_name = var_prepare(instruction, interpret)
+
+    if len(interpret.data_stack) == 0:
+        exit(56)
+    symb2_type, symb2_val = interpret.data_stack.pop()
+    if len(interpret.data_stack) == 0:
+        exit(56)
+    symb1_type, symb1_val = interpret.data_stack.pop()
+
+    if symb1_val is None or symb2_val is None:
+        exit(56)
+    if symb1_type != 'int' or symb2_type != 'int':
+        exit(53)
+    if symb2_val == 0:
+        exit(57)
+    result = symb1_val // symb2_val
+    var_frame[var_name] = tuple([symb1_type, result])
+
+
+def lts_i(interpret: i.Interpret, instruction):
+    var_frame, var_name = var_prepare(instruction, interpret)
+    if len(interpret.data_stack) == 0:
+        exit(56)
+    symb2_type, symb2_val = interpret.data_stack.pop()
+    if len(interpret.data_stack) == 0:
+        exit(56)
+    symb1_type, symb1_val = interpret.data_stack.pop()
+    if symb1_val is None or symb1_val is None:
+        exit(56)
+    elif symb1_type != symb2_type:
+        exit(53)
+    elif symb1_type == 'bool':
+        var_frame[var_name] = tuple(['bool', str(symb1_val) < str(symb1_val)])
+    elif symb1_type == 'string':
+        symb1_val = replace_escape_sequences(symb1_val)
+        symb1_val = replace_escape_sequences(symb1_val)
+        var_frame[var_name] = tuple(['bool', symb1_val < symb1_val])
+    elif symb1_type == 'int':
+        var_frame[var_name] = tuple(['bool', symb1_val < symb1_val])
+    else:
+        exit(53)
+
+
+def gts_i(interpret: i.Interpret, instruction):
+    var_frame, var_name = var_prepare(instruction, interpret)
+    if len(interpret.data_stack) == 0:
+        exit(56)
+    symb2_type, symb2_val = interpret.data_stack.pop()
+    if len(interpret.data_stack) == 0:
+        exit(56)
+    symb1_type, symb1_val = interpret.data_stack.pop()
+    if symb1_val is None or symb1_val is None:
+        exit(56)
+    elif symb1_type != symb2_type:
+        exit(53)
+    elif symb1_type == 'bool':
+        var_frame[var_name] = tuple(['bool', str(symb1_val) > str(symb1_val)])
+    elif symb1_type == 'string':
+        symb1_val = replace_escape_sequences(symb1_val)
+        symb1_val = replace_escape_sequences(symb1_val)
+        var_frame[var_name] = tuple(['bool', symb1_val > symb1_val])
+    elif symb1_type == 'int':
+        var_frame[var_name] = tuple(['bool', symb1_val > symb1_val])
+    else:
+        exit(53)
+
+
+def eqs_i(interpret: i.Interpret, instruction):
+    var_frame, var_name = var_prepare(instruction, interpret)
+    if len(interpret.data_stack) == 0:
+     exit(56)
+    symb2_type, symb2_value = interpret.data_stack.pop()
+    if len(interpret.data_stack) == 0:
+     exit(56)
+    symb1_type, symb1_value = interpret.data_stack.pop()
+    if symb1_value is None or symb2_value is None:
+        exit(56)
+
+    if symb1_type == 'nil' or symb2_type == 'nil':
+        if symb1_type == symb2_type:
+            var_frame[var_name] = tuple(['bool', True])
+        else:
+            var_frame[var_name] = tuple(['bool', False])
+    elif symb1_type != symb2_type:
+        exit(53)
+    elif symb1_type == 'bool':
+        var_frame[var_name] = tuple(['bool', str(symb1_value) == str(symb2_value)])
+    elif symb1_type == 'string':
+        symb1_value = replace_escape_sequences(symb1_value)
+        symb2_value = replace_escape_sequences(symb2_value)
+        var_frame[var_name] = tuple(['bool', symb1_value == symb2_value])
+    elif symb1_type == 'int':
+        var_frame[var_name] = tuple(['bool', symb1_value == symb2_value])
+    else:
+        exit(53)
+
+def ands_i(interpret: i.Interpret, instruction):
+    var_frame, var_name = var_prepare(instruction, interpret)
+    if len(interpret.data_stack) == 0:
+     exit(56)
+    symb2_type, symb2_value = interpret.data_stack.pop()
+    if len(interpret.data_stack) == 0:
+     exit(56)
+    symb1_type, symb1_value = interpret.data_stack.pop()
+    if symb1_value is None or symb2_value is None:
+        exit(56)
+    if symb1_type != 'bool' or symb2_type != 'bool':
+        exit(53)
+    var_frame[var_name] = tuple([symb1_type, symb1_value and symb2_value])
+
+
+def ors_i(interpret: i.Interpret, instruction):
+    var_frame, var_name = var_prepare(instruction, interpret)
+    if len(interpret.data_stack) == 0:
+     exit(56)
+    symb2_type, symb2_value = interpret.data_stack.pop()
+    if len(interpret.data_stack) == 0:
+     exit(56)
+    symb1_type, symb1_value = interpret.data_stack.pop()
+    if symb1_value is None or symb2_value is None:
+        exit(56)
+    if symb1_type != 'bool' or symb2_type != 'bool':
+        exit(53)
+    var_frame[var_name] = tuple([symb1_type, symb1_value or symb2_value])
+
+
+def nots_i(interpret: i.Interpret, instruction):
+    var_frame, var_name = var_prepare(instruction, interpret)
+    if len(interpret.data_stack) == 0:
+     exit(56)
+    symb1_type, symb1_value = interpret.data_stack.pop()
+    if symb1_value is None:
+        exit(56)
+    if symb1_type != 'bool':
+        exit(53)
+    var_frame[var_name] = tuple([symb1_type, not symb1_value])
+
+
+def int2chars_i(interpret: i.Interpret, instruction):
+    var_frame, var_name = var_prepare(instruction, interpret)
+    if len(interpret.data_stack) == 0:
+     exit(56)
+    symb1_type, symb1_value = interpret.data_stack.pop()
+    if symb1_value is None:
+        exit(56)
+    if symb1_type != 'int':
+        exit(53)
+    try:
+        symb1_value = chr(symb1_value)
+    except:
+        exit(58)
+    var_frame[var_name] = tuple(['string', symb1_value])
+
+
+def stri2ints_i(interpret: i.Interpret, instruction):
+    var_frame, var_name = var_prepare(instruction, interpret)
+    if len(interpret.data_stack) == 0:
+     exit(56)
+    symb2_type, symb2_value = interpret.data_stack.pop()
+    if len(interpret.data_stack) == 0:
+     exit(56)
+    symb1_type, symb1_value = interpret.data_stack.pop()
+    if symb1_value is None or symb2_value is None:
+        exit(56)
+    if symb1_type != 'string' or symb2_type != 'int':
+        exit(53)
+    if 0 > symb2_value or symb2_value > len(symb1_value) - 1:
+        exit(58)
+    try:
+        var_frame[var_name] = tuple(['int', ord(symb1_value[symb2_value])])
+    except:
+        exit(58)  # mozna jiny kod, neni specifikovano jak se ma ukoncit
+
+
+def jumpifeqs_i(interpret: i.Interpret, instruction):
+    label_name = list(instruction)[0].text
+    if label_name not in interpret.label_dict.keys():
+        exit(52)
+    if len(interpret.data_stack) == 0:
+     exit(56)
+    symb2_type, symb2_value = interpret.data_stack.pop()
+    if len(interpret.data_stack) == 0:
+     exit(56)
+    symb1_type, symb1_value = interpret.data_stack.pop()
+    if symb1_value is None or symb2_value is None:
+        exit(56)
+
+    if symb1_type == 'nil' or symb2_type == 'nil':
+        if symb1_type == symb2_type:
+            interpret.inst_index = interpret.label_dict[label_name]
+    elif symb1_type != symb2_type:
+        exit(53)
+    elif symb1_type == 'bool':
+        if str(symb1_value) == str(symb2_value):
+            interpret.inst_index = interpret.label_dict[label_name]
+    elif symb1_type == 'string':
+        symb1_value = replace_escape_sequences(symb1_value)
+        symb2_value = replace_escape_sequences(symb2_value)
+        if symb1_value == symb2_value:
+            interpret.inst_index = interpret.label_dict[label_name]
+    elif symb1_type == 'int':
+        if symb1_value == symb2_value:
+            interpret.inst_index = interpret.label_dict[label_name]
+    else:
+        exit(53)
+
+
+def jumpifneqs_i(interpret: i.Interpret, instruction):
+    label_name = list(instruction)[0].text
+    if label_name not in interpret.label_dict.keys():
+        exit(52)
+    symb2_type, symb2_value = interpret.data_stack.pop()
+    if len(interpret.data_stack) == 0:
+     exit(56)
+    symb1_type, symb1_value = interpret.data_stack.pop()
+    if symb1_value is None or symb2_value is None:
+        exit(56)
+
+    if symb1_type == 'nil' or symb2_type == 'nil':
+        if symb1_type != symb2_type:
+            interpret.inst_index = interpret.label_dict[label_name]
+    elif symb1_type != symb2_type:
+        exit(53)
+    elif symb1_type == 'bool':
+        if str(symb1_value) != str(symb2_value):
+            interpret.inst_index = interpret.label_dict[label_name]
+    elif symb1_type == 'string':
+        symb1_value = replace_escape_sequences(symb1_value)
+        symb2_value = replace_escape_sequences(symb2_value)
+        if symb1_value != symb2_value:
+            interpret.inst_index = interpret.label_dict[label_name]
+    elif symb1_type == 'int':
+        if symb1_value != symb2_value:
+            interpret.inst_index = interpret.label_dict[label_name]
+    else:
+        exit(53)

@@ -16,8 +16,10 @@ opcodes = ['CREATEFRAME', 'PUSHFRAME', 'POPFRAME', 'RETURN', 'BREAK', 'DEFVAR', 
            'POPS', 'WRITE', 'LABEL', 'JUMP', 'EXIT', 'DPRINT', 'MOVE', 'NOT', 'INT2CHAR',
            'READ', 'STRLEN', 'TYPE', 'ADD', 'SUB', 'MUL', 'IDIV', 'LT', 'GT', 'EQ', 'AND', 'OR',
            'STRI2INT', 'CONCAT', 'GETCHAR', 'SETCHAR', 'JUMPIFEQ', 'JUMPIFNEQ']
-zero_arg_opcodes = ['CREATEFRAME', 'PUSHFRAME', 'POPFRAME', 'RETURN', 'BREAK']
-one_arg_opcodes = ['DEFVAR', 'CALL', 'PUSHS', 'POPS', 'WRITE', 'LABEL', 'JUMP', 'EXIT', 'DPRINT']
+zero_arg_opcodes = ['CREATEFRAME', 'PUSHFRAME', 'POPFRAME', 'RETURN', 'BREAK', 'CLEARS']
+one_arg_opcodes = ['DEFVAR', 'CALL', 'PUSHS', 'POPS', 'WRITE', 'LABEL', 'JUMP', 'EXIT',
+                   'DPRINT', 'ADDS', 'SUBS', 'MULS', 'IDIVS', 'LTS', 'GTS', 'EQS', 'ANDS',
+                   'ORS', 'NOTS', 'INT2CHARS', 'STRI2INTS', 'JUMPIFEQS', 'JUMPIFNEQS']
 two_arg_opcodes = ['MOVE', 'NOT', 'INT2CHAR', 'READ', 'STRLEN', 'TYPE']
 three_arg_opcodes = ['ADD', 'SUB', 'MUL', 'IDIV', 'LT', 'GT', 'EQ', 'AND', 'OR', 'STRI2INT',
                      'CONCAT', 'GETCHAR', 'SETCHAR', 'JUMPIFEQ', 'JUMPIFNEQ']
@@ -36,4 +38,7 @@ inst2method_dict = {'CREATEFRAME': createframe_i, 'PUSHFRAME': pushframe_i, 'POP
                     'IDIV': idiv_i, 'LT': lt_i, 'GT': gt_i, 'EQ': eq_i,
                     'AND': and_i, 'OR': or_i, 'STRI2INT': stri2int_i, 'CONCAT': concat_i,
                     'GETCHAR': getchar_i, 'SETCHAR': setchar_i, 'JUMPIFEQ': jumpifeq_i,
-                    'JUMPIFNEQ': jumpifneq_i}
+                    'JUMPIFNEQ': jumpifneq_i, 'CLEARS': clears_i, 'ADDS': adds_i, 'SUBS': subs_i,
+                    'MULS': muls_i, 'IDIVS': idivs_i, 'LTS': lts_i, 'GTS': gts_i, 'EQS': eqs_i,
+                    'ANDS': ands_i, 'ORS': ors_i, 'NOTS': nots_i, 'INT2CHARS': int2chars_i,
+                    'STRI2INTS': stri2ints_i, 'JUMPIFEQS': jumpifeqs_i, 'JUMPIFNEQS': jumpifneqs_i}
