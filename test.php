@@ -27,7 +27,7 @@ function print_help() {
     jexamxml     = volitelny argument, umisteni .jar archivu JEXAMXML, zakladni
                    hodnota je umisteni na serveru merlin");
 }
-
+# aktualizace hodnot argumentu
 foreach (array_keys($options) as $option) {
     if (! key_exists($option, $allopts))
         exit(10);
@@ -44,6 +44,7 @@ if (key_exists("help", $options)){
     exit(0);
 }
 
+# kontrola formalnich pozadavku
 if (($allopts["parse-only"] and $allopts["int-only"]) or ($allopts["parse-only"] and key_exists("int-script", $options)) or
     ($allopts["int-only"] and key_exists("parse-script", $options)))
     exit(10);
@@ -53,6 +54,10 @@ $out_filenames = array();
 $in_filenames = array();
 $rc_filenames = array();
 
+/**
+ * Funkce projde rekurzivne zadany adresar a vlozi patricne nazvy souboru do patricnych poli
+ * @param string $dir adresar ktery se ma projit
+ */
 function recursive_dir_walk($dir){
     global $src_filenames, $out_filenames, $in_filenames, $rc_filenames;
     foreach (scandir($dir) as $file_or_dir) {
@@ -77,6 +82,7 @@ function recursive_dir_walk($dir){
         }
     }
 }
+
 if ($allopts["recursive"])
     recursive_dir_walk($allopts["directory"]);
 else {
@@ -95,6 +101,8 @@ else {
             array_push($rc_filenames, $allopts["directory"].DIRECTORY_SEPARATOR.$match_rc[1]);
     }
 }
+
+# Pro kazdy .src soubor vytvori pripadne chybejici soubory .in/ou/rc
 foreach ($src_filenames as $src_file) {
     preg_match("/(.+)\.src/", $src_file, $file_core_name);
     if (!in_array($file_core_name[1].".out", $out_filenames))
@@ -108,6 +116,12 @@ foreach ($src_filenames as $src_file) {
 }
 $html_output = "";
 
+/**
+ * @param string $test_name nazev testu
+ * @param int $expected_rc ocekavany exit code
+ * @param string $actual_rc realny exit code
+ * @param string $script nazev skriptu, ktery byl testovan
+ */
 function html_print_failed($test_name, $expected_rc, $actual_rc, $script='interpret.py'){
     global $html_output;
     if ($expected_rc != $actual_rc){
@@ -123,6 +137,10 @@ function html_print_failed($test_name, $expected_rc, $actual_rc, $script='interp
   </tr>";
 }
 
+/**
+ * @param string $test_name nazev testu
+ * @param string $script nazev skriptu, ktery byl testovan
+ */
 function html_print_passed($test_name, $script='interpret.py'){
     global $html_output;
     $html_output .= "<tr>
@@ -133,6 +151,13 @@ function html_print_passed($test_name, $script='interpret.py'){
   </tr>";
 }
 
+/**
+ * Funkce spusti parse.php s patricnymi argumenty a kontorluje vystup
+ * Vola funkce na zapsani vysledku do HTML
+ * @param string $file_name test, ktery se ma otestovat
+ * @param bool $interpret volba rezimu
+ * @return bool true, kdyz vse uspelo, jinak false, relevantni pouze v rezimu interpret=true
+ */
 function parse_test($file_name, $interpret=false){
     global $allopts;
     global $passed_count;
@@ -192,6 +217,12 @@ function parse_test($file_name, $interpret=false){
     return $success;
 }
 
+/**
+ * Funkce spusti interpret.py s patricnymi argumenty a kontorluje vystup
+ * Vola funkce na zapsani vysledku do HTML
+ * @param string $file_name test, ktery se ma otestovat
+ * @param string $extension koncovka vstupniho souboru podle rezimu int-only vs both
+ */
 function interpret_test($file_name, $extension='.src'){
     global $allopts;
     global $failed_count;
@@ -240,6 +271,9 @@ function interpret_test($file_name, $extension='.src'){
         unlink($file_core_name.$extension);
 }
 
+# _______________ MAIN _______________
+# Podle rezimu se bud pousti jenom parse.php, jenom interpret.py
+# anebo napred parse.php a pak na jeho vystunim XML se pousti interpret.py
 $html_name_of_test = "";
 if ($allopts['parse-only']) {
     $html_name_of_test = "Výsledky testování skriptu parse.php";
@@ -263,6 +297,7 @@ else {
 }
 
 
+# Az se vse projede, naformatuje se a vypise HTML s vysledky
 $html_heading = "<!DOCTYPE html>
 <html lang=\"cs\">
 
