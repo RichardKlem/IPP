@@ -66,3 +66,18 @@ Ve skriptu `test.php` jsem využil pouze vestvavěných funkcí.
 ##2.2) Moduly a členění
 Skript `test.php` je samostatným skriptem, nemá žádné moduly.
 ##2.3) Průběh skriptu
+Nejprve se načtou argumenty z příkazové řádky a zkontrolují formální požadavky na ně.<br>
+Poté se projde adresář s testy, rekurzivně nebo pouze na první úrovni, a naplní se<br>
+pole patřičnými názvy souborů. V případě, že nějaký chybí, tak se vytvoří dle specifikace<br>
+v zadání.
+
+Následuje již přímo samotné testování, podle režimu, který je zvolen pomocí parametrů,<br>
+se buď provádí pouze testování parseru anebo pouze testování interpretu anebo testování<br>
+nejprve parseru a jeho XML výstup se použije jako vstup pro interpret.<br>
+V každé jedné iteraci nad testovacími soubory se provede i kontrola správnosti výstupu.<br>
+XML výstup z parseru se porovnává oproti referenčnímu pomocí nástroje _JExamXML_. Výstup<br>
+z interpretu se porovnává pomocí unixového nástroje _diff_.
+
+Na základě výsledků z testu se generuje patřičný záznam do HTML výstupu.<br>
+Samotný HTML výstup je strukturován do tabulky s jednoduchým barevným odlišením testů,<br>
+které prošly a které ne a jsou vypsány základní informace o testu.
