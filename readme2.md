@@ -62,7 +62,7 @@ Jednotlivé instrukce provádí různé operace podle specifikace v zadání.
 
 #2) test.php
 ##2.1) Knihovny
-Ve skriptu `test.php` jsem využil pouze vestvavěných funkcí.
+Ve skriptu `test.php` jsem využil pouze vestavěných funkcí.
 ##2.2) Moduly a členění
 Skript `test.php` je samostatným skriptem, nemá žádné moduly.
 ##2.3) Průběh skriptu
