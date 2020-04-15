@@ -41,18 +41,32 @@ class Interpret:
                 self.input_data = file.readlines()
 
     @staticmethod
-    def stop_interpreting(exit_code):
-        exit(exit_code)
-
-    @staticmethod
     def not_any_in(is_this, in_that):
+        """
+        pomocna funkce na zjisteni zda nejaky prvek z prvniho seznamu
+        je nechteny, tedy nenachazi se v moznych variantach v seznamu druhem
+        :param is_this: seznam testovanych prvku
+        :param in_that: seznam vsech korektnich prvku
+        :return: True, kdyz alespon jeden prvek neni korektni, jinak False
+        """
         return any(i not in in_that for i in is_this)
 
     def inst2method(self, instruction: ET.Element):
+        """
+        Podle opcode instrukce provede patricnou metodu
+        :param instruction:  ElementTree.Element xml element reprezentujici jednu instrukci
+        """
         constants.inst2method_dict[str(instruction.get('opcode')).upper()](self, instruction)
 
     @staticmethod
     def check_type_value_compatibility(symb_type: str, symb_value: str):
+        """
+        Testuje, zda je hodnota v poradku vzhledem k typu symbolu
+        Kdyz je vse ok, prevede hodnotu do Pythonich typu
+        :param symb_type: typ symbolu
+        :param symb_value: hodnota symbolu
+        :return: dvojice typ, prevedena_hodnota
+        """
         if symb_type == 'int':
             try:
                 symb_value = int(symb_value)
@@ -146,22 +160,12 @@ class Interpret:
         var_type, var_value = frame[regex.group(2)]
         return var_type, var_value
 
-    def set_type_and_value_of_var(self, dest_var: ET.Element, var_type: str, var_value: str):
-        if self.not_any_in([dest_var.get('type')], constants.symbol_types):
-            exit(32)  #neznamy typ argumentu
-        if dest_var.get('type') != 'var':
-            exit(53)  # spatny typ, musi byt var
-        regex = re.match(r'^(?:([GLT]F)@)([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', dest_var.text)
-        if regex is None:
-            exit(53)  # mozna 32? TODO
-        # najdu ramec v kterem promenna lezi
-        frame = self.get_frame_of_var(regex.group(2), regex.group(1))
-        if frame is None:  # None znamena, ze promenna nebyla nalezena
-            exit(54)  # neexistujici promenna v existujicim ramci
-        var_type, var_value = self.check_type_value_compatibility(var_type, var_value)
-        frame[regex.group(2)] = tuple([var_type, var_value])
-
     def get_type_and_value_of_symb(self, argument: ET.Element):
+        """
+        Rozsirena funkcionalita na obecny symbol, jinak stejne jako get_type_and_value_of_var()
+        :param argument:  objekt typu ET.Element, ktery predstavuje argument instrukce
+        :return:  dvojice typ, hodnota promenne
+        """
         symb_type = argument.get('type')
         symb_value = argument.text
         if symb_type == 'var':
@@ -170,61 +174,10 @@ class Interpret:
             symb_type, symb_value = self.check_type_value_compatibility(symb_type, symb_value)
         return symb_type, symb_value
 
-    def check_arg_type_and_get_value(self, argument: ET.Element):
-        """
-        Kontroluje zda je promenna v ramci.
-        A ZAROVEN vraci dvojici (typ promenne, jeji hodnota)!!!
-        Kdyz je promenna nedefinovana, vraci None, s cimz je potreba pocitat!!!
-        :param argument: xml element popisujici argument instrukce
-        :return: dvojice (typ promenne, hodnota promenne)
-        """
-        if self.not_any_in([argument.get('type')], constants.symbol_types):
-            exit(32)
-        symb_type = argument.get('type')
-        regex = None
-        if argument.text is not None and symb_type == 'var':
-            regex = re.match(r'^(?:([GLT]F)@)([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', argument.text)
-        symb_value = ''
-        # kdyz je regex None, tak byl v tetovem poli argumentu prazdny retezec, coz je povoleno
-        # pouze pro string, jinak je to chyba
-        if regex is None:
-            if symb_type == 'string':
-                symb_value = ''
-            else:
-                exit(32)
-        elif symb_type == 'int':
-            try:
-                symb_value = int(argument.text)
-            except:
-                exit(53)
-        elif symb_type == 'var':
-            if regex.lastindex != 2:
-                exit(53)
-            symb_value = self.get_value_from_var(regex.group(2), regex.group(1))
-        elif symb_type == 'bool':
-            if regex.group(2) not in ['true', 'false']:
-                exit(53)
-            symb_value = regex.group(2)
-        elif symb_type == 'string':
-            symb_value = regex.group(2)
-        elif symb_type == 'nil':
-            if regex.group(2) != 'nil':
-                exit(53)
-            symb_value = 'nil'
-        elif symb_type == 'label':
-            symb_value = regex.group(2)
-        elif symb_type == 'type':
-            if argument.text not in ['int', 'bool', 'string', 'nil', 'label', 'type', 'var']:
-                exit(53)
-            symb_value = argument.text
-        return tuple([symb_type, symb_value])
-
     def check_instruction_correctness(self, instruction: ET.Element):
         """
-        Check if instruction has everything what it should have and everything is correct in all
-        ways(lexical, syntactic and semantic).
-        :param instruction: ElementTree.Element xml element representing one instruction
-        :return: true if instruction is correct in every way, false other
+        Kontroluje, zda instrukce splnuje vsechny pozadavky
+        :param instruction: ElementTree.Element xml element reprezentujici jednu instrukci
         """
         inst = instruction.get('opcode').upper()
         length = len(instruction[:])
@@ -241,36 +194,13 @@ class Interpret:
                 exit(32)
             i = i + 1
 
-    def get_type_from_var_value(self, value: str):
-        if value in ['true', 'false']:
-            return 'bool'
-        elif value == 'nil':
-            return 'nil'
-        is_int = False
-        try:
-            int(value)
-            is_int = True
-
-        except:
-            pass
-        if is_int:
-            return 'int'
-        is_string = False
-        try:
-            str(value)
-            is_string = True
-        except:
-            pass
-        if is_string:
-            return 'string'
-        exit(32)
-
-    def get_value_from_var(self, var: str, frame='any'):
-        frame = self.get_frame_of_var(var, frame)
-        if frame:
-            return frame.get(var)
-
     def interpret(self):
+        """
+        Hlavni metoda potazmo smycka skriptu
+        Nejprve se nachysta strom elementu-instrukci, zkontorluji se navesti
+        a pak se interpretuji instrukce
+        :return: pri uspechu ukonci program s koden 0, jinak podle zadani
+        """
         try:
             xmlreader = ET.parse(self.source_data)
         except ET.ParseError:

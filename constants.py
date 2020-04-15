@@ -1,15 +1,3 @@
-"""
-• 52 - chyba při sémantických kontrolách vstupního kódu v IPPcode20 (např. použití nedefinovaného
-       návěští, redefinice proměnné);
-• 53 - běhová chyba interpretace – špatné typy operandů;
-• 54 - běhová chyba interpretace – přístup k neexistující proměnné (rámec existuje);
-• 55 - běhová chyba interpretace – rámec neexistuje (např. čtení z prázdného zásobníku rámců);
-• 56 - běhová chyba interpretace – chybějící hodnota (v proměnné, na datovém zásobníku, nebo
-       v zásobníku volání);
-• 57 - běhová chyba interpretace – špatná hodnota operandu (např. dělení nulou, špatná návratová
-       hodnota instrukce EXIT);
-• 58 - běhová chyba interpretace – chybná práce s řetězcem.
-"""
 from instruction_methods import *
 
 opcodes = ['CREATEFRAME', 'PUSHFRAME', 'POPFRAME', 'RETURN', 'BREAK', 'DEFVAR', 'CALL', 'PUSHS',
