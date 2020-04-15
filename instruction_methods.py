@@ -24,7 +24,7 @@ def replace_escape_sequences(symb1_value):
         symb1_value = symb1_value.replace('\\' + str(char_int), char_str)
     return symb1_value
 
-
+# Nasledujici instrukce koresponduji se specifikaci v zadani
 def createframe_i(interpret: i.Interpret, instruction):
     interpret.tmp_frame = {}
 
@@ -146,13 +146,18 @@ def exit_i(interpret: i.Interpret, instruction):
 
 
 def dprint_i(interpret: i.Interpret, instruction):
-    regex = re.match(r'([GLT]F)@([\-$&%*!?a-zA-Z_][\-$&%*!?\w]*$)+', list(instruction)[
-        0].text)
-    if regex is None or regex.lastindex != 2:
-        _, symb1_val = interpret.check_arg_type_and_get_value(list(instruction)[0])
+    symb_type, symb_value = interpret.get_type_and_value_of_symb(list(instruction)[0])
+    if symb_value is None:
+        exit(56)
+    if symb_type == 'nil':
+        print('', file=sys.stderr, end='')
+    elif symb_type == 'bool':
+        print(str(symb_value).lower(), file=sys.stderr, end='')
+    elif symb_type == 'string':
+        symb_value = replace_escape_sequences(symb_value)
+        print(symb_value, file=sys.stderr, end='')
     else:
-        symb1_val = interpret.get_value_from_var(regex.group(2), regex.group(1))
-    print(symb1_val, file=sys.stderr)
+        print(symb_value, file=sys.stderr, end='')
 
 
 def move_i(interpret: i.Interpret, instruction):
